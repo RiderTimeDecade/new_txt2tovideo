@@ -49,80 +49,60 @@ def merge_to_video(audio_path: str,
         
         print(f"音频时长: {audio_duration} 秒")
 
-        # 构建基本的 FFmpeg 命令
-        cmd = [
-            'ffmpeg', '-y',
-            '-loop', '1',         # 循环播放图片
-            '-i', pic_path,       # 输入图片
-            '-i', audio_path,     # 输入音频
-        ]
-
-        # 如果有特效，添加特效输入
-        if effect_path:
-            cmd.extend([
-                '-stream_loop', '-1',  # 循环播放特效
-                '-i', effect_path
-            ])
-
-        # 构建滤镜链
-        filter_complex = ""
+        # 一步到位处理所有元素
+        cmd = ['ffmpeg', '-y']
         
-        # 处理背景图片和特效
+        # 添加输入
+        cmd.extend(['-loop', '1', '-i', pic_path])  # 图片
+        cmd.extend(['-i', audio_path])  # 音频
+        
+        # 如果有特效，添加特效
+        filter_complex = []
         if effect_path:
-            # 创建滤色混合
-            filter_complex = (
-                # 背景图片格式转换
-                '[0:v]format=rgba[bg];'
-                # 特效格式转换和缩放
-                '[2:v]format=rgba,scale=1280:720:flags=lanczos[fx];'
-                # 应用滤色混合
-                '[bg][fx]blend=all_mode=screen:all_opacity=1:eof_action=repeat'
-            )
-            
-            # 如果有字幕，添加字幕
-            if srt_path:
-                srt_path = srt_path.replace('\\', '/').replace(':', '\\:')
-                filter_complex += f"[blend];[blend]subtitles='{srt_path}':force_style='FontName=SimHei,FontSize=24'"
-                
-            # 添加最终输出标签
-            filter_complex += '[v]'
+            cmd.extend(['-stream_loop', '-1', '-i', effect_path])  # 特效
+            # 缩放特效至720p并使用快速算法
+            filter_complex.append('[2:v]scale=1280:720:flags=fast_bilinear,format=rgba[fx]')
+            # 使用lighten混合模式
+            filter_complex.append('[0:v]format=rgba[bg]')
+            filter_complex.append('[bg][fx]blend=all_mode=lighten:all_opacity=1.0[video]')
         else:
-            # 只有背景和字幕
-            if srt_path:
-                srt_path = srt_path.replace('\\', '/').replace(':', '\\:')
-                filter_complex = f"[0:v]format=yuv420p,subtitles='{srt_path}':force_style='FontName=SimHei,FontSize=24'[v]"
-            else:
-                filter_complex = "[0:v]format=yuv420p[v]"
-
-        # 添加滤镜链到命令
-        cmd.extend(['-filter_complex', filter_complex])
-
-        # 指定输出流映射
-        cmd.extend([
-            '-map', '[v]',
-            '-map', '1:a'
-        ])
-
+            filter_complex.append('[0:v]format=yuv420p[video]')
+        
+        # 如果有字幕，添加字幕
+        if srt_path:
+            srt_path = srt_path.replace('\\', '/').replace(':', '\\:')
+            filter_complex[-1] = filter_complex[-1].replace('[video]', '[videotmp]')
+            filter_complex.append(f'[videotmp]subtitles={srt_path}:force_style=\'FontName=SimHei,FontSize=24\'[video]')
+        
+        # 添加滤镜链
+        cmd.extend(['-filter_complex', ';'.join(filter_complex)])
+        
         # 添加输出参数
         cmd.extend([
-            '-c:v', 'libx264',     # 视频编码器
-            '-tune', 'stillimage', # 优化静态图片
-            '-c:a', 'aac',        # 音频编码器
-            '-b:a', '192k',       # 音频比特率
-            '-pix_fmt', 'yuv420p',# 像素格式
-            '-t', str(audio_duration),  # 设置输出视频的时长与音频相同
+            '-map', '[video]',      # 视频流
+            '-map', '1:a',          # 音频流
+            '-c:v', 'libx264',      # 视频编码器
+            '-preset', 'ultrafast', # 最快速度设置
+            '-tune', 'stillimage',  # 静态图片优化
+            '-crf', '28',           # 稍微降低质量以提高速度
+            '-c:a', 'aac',          # 音频编码器
+            '-b:a', '128k',         # 音频比特率
+            '-pix_fmt', 'yuv420p',  # 像素格式
+            '-t', str(audio_duration),  # 视频时长
+            '-threads', '0',        # 使用所有可用线程
             output_path
         ])
-
-        # 执行 FFmpeg 命令
-        print("正在执行 FFmpeg 命令...")
+        
+        # 执行命令
+        print("正在执行FFmpeg命令...")
         print(f"命令: {' '.join(cmd)}")
         
         result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode != 0:
-            print(f"FFmpeg 错误输出：{result.stderr}")
-            raise RuntimeError("FFmpeg 命令执行失败")
+            print(f"FFmpeg错误输出: {result.stderr}")
+            print(f"FFmpeg标准输出: {result.stdout}")
+            raise RuntimeError(f"视频生成失败: {result.stderr}")
         
         print(f"视频已成功生成：{output_path}")
         
