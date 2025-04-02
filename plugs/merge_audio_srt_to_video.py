@@ -60,11 +60,10 @@ def merge_to_video(audio_path: str,
         filter_complex = []
         if effect_path:
             cmd.extend(['-stream_loop', '-1', '-i', effect_path])  # 特效
-            # 缩放特效至720p并使用快速算法
-            filter_complex.append('[2:v]scale=1280:720:flags=fast_bilinear,format=rgba[fx]')
+            # 缩放特效至720p
+            filter_complex.append('[2:v]scale=1280:720[fx]')
             # 使用lighten混合模式
-            filter_complex.append('[0:v]format=rgba[bg]')
-            filter_complex.append('[bg][fx]blend=all_mode=lighten:all_opacity=1.0[video]')
+            filter_complex.append('[0:v][fx]blend=all_mode=lighten[video]')
         else:
             filter_complex.append('[0:v]format=yuv420p[video]')
         
@@ -77,19 +76,19 @@ def merge_to_video(audio_path: str,
         # 添加滤镜链
         cmd.extend(['-filter_complex', ';'.join(filter_complex)])
         
-        # 添加输出参数
+        # 设置输出参数
         cmd.extend([
             '-map', '[video]',      # 视频流
             '-map', '1:a',          # 音频流
             '-c:v', 'libx264',      # 视频编码器
             '-preset', 'ultrafast', # 最快速度设置
             '-tune', 'stillimage',  # 静态图片优化
-            '-crf', '28',           # 稍微降低质量以提高速度
+            '-crf', '23',           # 视频质量（值越小质量越高）
             '-c:a', 'aac',          # 音频编码器
             '-b:a', '128k',         # 音频比特率
             '-pix_fmt', 'yuv420p',  # 像素格式
+            '-shortest',            # 使用最短的输入流长度
             '-t', str(audio_duration),  # 视频时长
-            '-threads', '0',        # 使用所有可用线程
             output_path
         ])
         
