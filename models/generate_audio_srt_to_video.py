@@ -16,14 +16,11 @@ def generate_audio_srt_to_video(text_path,voice_name):
     text = read_text_file(text_path)
     #每 2000 个字符分割一次
     # 文生图
-    try:
-        img_path = sd_to_pic(text[0:200],"output")
-        if img_path is None:
-            print("文生图失败，使用默认图片")
-            img_path = "data/pic.png"
-    except Exception as e:
-        print(f"文生图过程出错: {str(e)}，将使用默认图片")
-        img_path = "data/pic.png"
+    
+    #img_path = sd_to_pic(text[0:200],"output")
+    
+
+    img_path = "data/pic.png"
 
 
     text_chunks = [text[i:i+2000] for i in range(0, len(text), 2000)]

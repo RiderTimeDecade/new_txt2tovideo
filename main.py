@@ -18,6 +18,6 @@ if __name__ == "__main__":
     os.makedirs("output/temp", exist_ok=True)
     
     # 一键生成视频
-    generate_audio_srt_to_video(text_path="data/1.txt",voice_name="zh-CN-YunxiNeural")
+    generate_audio_srt_to_video(text_path="data/1.txt",voice_name="en-US-AriaNeural")
 
     

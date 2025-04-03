@@ -22,7 +22,7 @@ def split_text_into_sentences(text):
         list: 句子列表
     """
     # 定义分句的标点符号
-    delimiters = ['。', '！', '？', '…']
+    delimiters = ['。', '！', '？', '…',",","."]
     sentences = []
     current_sentence = ""
     quote_stack = []  # 用于追踪引号
@@ -99,50 +99,53 @@ def find_sentence_timestamps(sentence, timestamps, start_idx):
     return start_time, end_time, idx, matched_chars
 
 def generate_srt_entries(text, timestamps):
-    """根据时间戳生成SRT条目
+    """根据时间戳生成SRT条目，每行字幕包含10-15个词
     
     Args:
-        text (str): 原始文本
-        timestamps (list): 时间戳列表
+        text (str): 原始文本（在此函数中不使用）
+        timestamps (list): 时间戳列表，每个元素包含 text, offset, duration
         
     Returns:
         list: SRT条目列表
     """
-    sentences = split_text_into_sentences(text)
     srt_entries = []
-    idx = 0
-    last_end_time = None
+    current_entry = {
+        'text': [],
+        'start_time': None,
+        'end_time': None
+    }
+    word_count = 0
     
-    for sentence in sentences:
-        if not sentence.strip() or idx >= len(timestamps):
-            continue
-            
-        # 查找句子的时间戳
-        start_time, end_time, next_idx, matched_chars = find_sentence_timestamps(sentence, timestamps, idx)
+    for i, ts in enumerate(timestamps):
+        # 如果是新的字幕条目开始
+        if current_entry['start_time'] is None:
+            current_entry['start_time'] = ts['offset']
         
-        if start_time is None or end_time is None:
-            continue
-            
-        # 如果有上一个字幕的结束时间，使用它作为当前字幕的开始时间
-        if last_end_time is not None:
-            start_time = last_end_time
-            
-        # 如果有下一句，确保当前句子的结束时间不会超过下一句的开始时间
-        if next_idx < len(timestamps):
-            next_start = timestamps[next_idx]['offset']
-            if next_start < end_time:
-                end_time = next_start
-            
-        srt_entries.append({
-            'index': len(srt_entries) + 1,
-            'start': start_time,
-            'end': end_time,
-            'text': sentence.strip()
-        })
+        # 添加当前词到字幕文本，并在词之间添加空格
+        current_entry['text'].append(ts['text'] + ' ')
+        word_count += 1
+        current_entry['end_time'] = ts['offset'] + ts['duration']
         
-        # 保存当前字幕的结束时间
-        last_end_time = end_time
-        idx = next_idx
+        # 当词数达到10个或更多，且当前是最后一个时间戳时，生成字幕条目
+        if word_count >= 10 and (i == len(timestamps) - 1 or word_count >= 15):
+            # 合并文本并去除最后一个空格
+            entry_text = ''.join(current_entry['text']).strip()
+            
+            # 添加到字幕条目列表
+            srt_entries.append({
+                'index': len(srt_entries) + 1,
+                'start': current_entry['start_time'],
+                'end': current_entry['end_time'],
+                'text': entry_text
+            })
+            
+            # 重置当前条目
+            current_entry = {
+                'text': [],
+                'start_time': None,
+                'end_time': None
+            }
+            word_count = 0
     
     return srt_entries
 
