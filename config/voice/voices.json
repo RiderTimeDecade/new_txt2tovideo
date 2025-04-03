@@ -1,0 +1,14 @@
+{
+  "英文声音": {
+    "英文专业女声": "en-US-AriaNeural",
+    "英文正式女声": "en-US-JaneNeural",
+    "英文青年女声": "en-US-MonicaNeural",
+    "英文活泼女声": "en-US-AshleyNeural"
+  },
+  "中文声音": {
+    "言情男声": "zh-CN-YunhaoNeural",
+    "言情女声": "zh-CN-XiaoxiaoNeural",
+    "恐怖声线": "zh-CN-XiaomoNeural",
+    "穿越声线": "zh-CN-YunxiNeural"
+  }
+}

@@ -58,20 +58,23 @@ def merge_to_video(audio_path: str,
         
         # 如果有特效，添加特效
         filter_complex = []
-        if effect_path:
-            cmd.extend(['-stream_loop', '-1', '-i', effect_path])  # 特效
-            # 缩放特效至720p
-            filter_complex.append('[2:v]scale=1280:720[fx]')
-            # 使用lighten混合模式
-            filter_complex.append('[0:v][fx]blend=all_mode=lighten[video]')
-        else:
-            filter_complex.append('[0:v]format=yuv420p[video]')
+        # 暂时关闭特效合成功能
+        # if effect_path:
+        #     cmd.extend(['-stream_loop', '-1', '-i', effect_path])  # 特效
+        #     # 确保背景图片转为视频格式
+        #     filter_complex.append('[0:v]format=yuv420p[bg]')
+        #     # 处理MOV格式特效，保留alpha通道
+        #     filter_complex.append('[2:v]scale=1280:720,format=yuva420p[fx]')
+        #     # 使用overlay直接叠加特效，自动利用alpha通道
+        #     filter_complex.append('[bg][fx]overlay=0:0:format=auto[video]')
+        # else:
+        filter_complex.append('[0:v]format=yuv420p[video]')
         
         # 如果有字幕，添加字幕
         if srt_path:
             srt_path = srt_path.replace('\\', '/').replace(':', '\\:')
             filter_complex[-1] = filter_complex[-1].replace('[video]', '[videotmp]')
-            filter_complex.append(f'[videotmp]subtitles={srt_path}:force_style=\'FontName=SimHei,FontSize=24\'[video]')
+            filter_complex.append(f'[videotmp]subtitles={srt_path}:force_style=\'FontName=SimHei,FontSize=24,PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2,MarginV=30\'[video]')
         
         # 添加滤镜链
         cmd.extend(['-filter_complex', ';'.join(filter_complex)])
@@ -81,11 +84,15 @@ def merge_to_video(audio_path: str,
             '-map', '[video]',      # 视频流
             '-map', '1:a',          # 音频流
             '-c:v', 'libx264',      # 视频编码器
-            '-preset', 'ultrafast', # 最快速度设置
-            '-tune', 'stillimage',  # 静态图片优化
-            '-crf', '23',           # 视频质量（值越小质量越高）
+            '-preset', 'medium',    # 平衡速度和质量 
+            '-tune', 'film',        # 电影内容优化
+            '-profile:v', 'high',   # 高质量配置
+            '-crf', '18',           # 更高视频质量（值越小质量越高）
+            '-color_primaries', 'bt709', # 使用标准色彩原色
+            '-color_trc', 'bt709',       # 使用标准传输特性
+            '-colorspace', 'bt709',      # 使用标准色彩空间
             '-c:a', 'aac',          # 音频编码器
-            '-b:a', '128k',         # 音频比特率
+            '-b:a', '192k',         # 提高音频比特率
             '-pix_fmt', 'yuv420p',  # 像素格式
             '-shortest',            # 使用最短的输入流长度
             '-t', str(audio_duration),  # 视频时长
