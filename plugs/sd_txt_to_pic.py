@@ -7,6 +7,7 @@ import time
 import configparser
 from datetime import datetime
 from .ai_api import guiji_optimization_text,retry_on_failure
+from PIL import Image
 
 
 def get_sd_prompt(text):
@@ -41,11 +42,25 @@ def sd_to_pic(text,output_path):
             print(f"成功生成图片: {image_path}")
             return image_path
         else:
-            print("图片生成失败，返回None")
-            return None
+            print("图片生成失败，使用默认图片")
+            # 使用默认图片
+            default_image = "data/pic.png"
+            if not os.path.exists(default_image):
+                # 如果默认图片不存在，创建一个简单的纯色图片
+                os.makedirs(os.path.dirname(default_image), exist_ok=True)
+                img = Image.new('RGB', (1280, 720), color=(0, 0, 0))
+                img.save(default_image)
+            return default_image
     except Exception as e:
         print(f"图片生成失败: {str(e)}")
-        return None
+        # 使用默认图片
+        default_image = "data/pic.png"
+        if not os.path.exists(default_image):
+            # 如果默认图片不存在，创建一个简单的纯色图片
+            os.makedirs(os.path.dirname(default_image), exist_ok=True)
+            img = Image.new('RGB', (1280, 720), color=(0, 0, 0))
+            img.save(default_image)
+        return default_image
 
 @retry_on_failure(max_retries=3, delay=2)
 def sd_api(prompt,output_path):
@@ -53,7 +68,7 @@ def sd_api(prompt,output_path):
     
     # 读取配置文件
     config = configparser.ConfigParser()
-    config.read('config/config.ini')
+    config.read('../config/config.ini')
     
     #从DEFAULT获取sd_api_url
     sd_api_url = config.get('DEFAULT', 'sd_api_url') + "/sdapi/v1/txt2img"

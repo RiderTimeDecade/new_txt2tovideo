@@ -8,10 +8,6 @@ def mult_to_one(input_dir: str = "output",
                 output_file: str = "output/final_merged_video.mp4", 
                 file_pattern: str = "[0-9]*.mp4",
                 sort_by_number: bool = True) -> None:
-
-
-    #随机时间戳拼接名称
-    output_file = f"output/{time.strftime('%Y%m%d%H%M%S')}.mp4"
     """
     将多个MP4视频文件合并为一个视频文件
     
@@ -20,6 +16,9 @@ def mult_to_one(input_dir: str = "output",
     :param file_pattern: 文件匹配模式
     :param sort_by_number: 是否按文件名中的数字排序
     """
+    # 使用时间生成文件名
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    output_file = f"output/merged_{timestamp}.mp4"
     try:
         # 确保输出目录存在
         os.makedirs(os.path.dirname(output_file), exist_ok=True)

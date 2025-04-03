@@ -44,7 +44,7 @@ def guiji_optimization_text(
                             ):
     # 读取配置文件
     config = configparser.ConfigParser()
-    config.read('config/config.ini')
+    config.read('../config/config.ini')
     token = config.get('DEFAULT', 'token')
     api_url = config.get('DEFAULT', 'api_url')
     

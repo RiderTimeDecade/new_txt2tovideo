@@ -4,7 +4,7 @@ import os
 import azure.cognitiveservices.speech as speechsdk
 import time
 
-def synthesize_speech_with_timestamps(text, speech_config, file_name, max_retries=3, retry_delay=2):
+def synthesize_speech_with_timestamps(text, speech_config, file_name, max_retries=10, retry_delay=2):
     """合成语音并返回时间戳，带有重试机制
     
     Args:
