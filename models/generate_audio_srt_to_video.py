@@ -11,7 +11,7 @@ from plugs.sd_txt_to_pic import sd_to_pic
 import os
 
 
-def generate_audio_srt_to_video(text_path,voice_name):
+def generate_audio_srt_to_video(text_path,voice_name,img_path=None):
     """主函数"""
     try:
         # 读取文本
@@ -21,11 +21,13 @@ def generate_audio_srt_to_video(text_path,voice_name):
         # 确保输出目录存在
         os.makedirs("output/temp", exist_ok=True)
         
-        # 文生图
-        print("正在生成背景图片...")
-        img_path = sd_to_pic(text[0:200],"output")
-        print(f"背景图片路径: {img_path}")
-        
+        # # 文生图
+        if not (img_path):
+            print("正在生成背景图片...")
+            img_path = sd_to_pic(text[0:200],"output")
+            print(f"背景图片路径: {img_path}")
+        else:
+            print("使用传入图片")
         # 每 2000 个字符分割一次
         text_chunks = [text[i:i+2000] for i in range(0, len(text), 2000)]
         print(f"文本已分割为 {len(text_chunks)} 个片段")
@@ -74,7 +76,7 @@ def generate_audio_srt_chunk(text_chunk,file_name,voice_name):
     result, timestamps = synthesize_speech_with_timestamps(text_chunk, speech_config,file_name)
     
     # 生成SRT条目
-    srt_entries = generate_srt_entries(text_chunk, timestamps)
+    srt_entries = generate_srt_entries(text_chunk, timestamps,voice_name)
     
     # 写入SRT文件
     write_srt_file(srt_entries, f"output/temp/{file_name}.srt")

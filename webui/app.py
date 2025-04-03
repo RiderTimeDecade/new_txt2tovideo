@@ -40,11 +40,11 @@ def worker():
             if task is None:
                 break
                 
-            task_id, text_file, voice_name = task
+            task_id, text_file, voice_name, img_path = task
             print(f"工作线程开始处理任务: {task_id}")
             
             # 处理任务
-            process_task(task_id, text_file, voice_name)
+            process_task(task_id, text_file, voice_name, img_path)
             
             # 标记任务完成
             task_queue.task_done()
@@ -103,13 +103,12 @@ def get_voices():
 def generate_video():
     """生成视频的API端点"""
     try:
-        # 获取请求数据
-        data = request.json
-        text = data.get('text', '')
-        voice_name = data.get('voice', '')
+        # 获取表单数据
+        text = request.form.get('text', '')
+        voice_name = request.form.get('voice', '')
         
         if not text:
-            return jsonify({"success": False, "error": "文本不能为空"})
+            return jsonify({"error": "文本不能为空"})
         
         # 生成唯一文件名
         file_id = str(uuid.uuid4())
@@ -118,6 +117,20 @@ def generate_video():
         # 保存文本到文件
         with open(text_file, 'w', encoding='utf-8') as f:
             f.write(text)
+            
+        # 处理图片上传
+        img_path = None
+        if 'image' in request.files:
+            image = request.files['image']
+            if image and image.filename:
+                # 确保文件名安全
+                from werkzeug.utils import secure_filename
+                filename = secure_filename(image.filename)
+                # 生成唯一的图片文件名
+                img_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{file_id}_{filename}")
+                # 保存图片
+                image.save(img_path)
+                print(f"已保存上传的图片: {img_path}")
         
         # 创建任务ID
         task_id = str(uuid.uuid4())
@@ -128,25 +141,26 @@ def generate_video():
             "file_id": file_id,
             "created_at": datetime.now().isoformat(),
             "text": text[:50] + "..." if len(text) > 50 else text,  # 保存文本预览
-            "voice": voice_name
+            "voice": voice_name,
+            "has_image": bool(img_path)  # 记录是否使用了自定义图片
         }
         
         # 将任务添加到队列
-        task_queue.put((task_id, text_file, voice_name))
+        task_queue.put((task_id, text_file, voice_name, img_path))
         
         # 确保工作线程正在运行
         start_worker()
         
         return jsonify({
-            "success": True, 
             "task_id": task_id,
             "message": "任务已加入队列"
         })
     
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        print(f"生成视频时出错: {str(e)}")
+        return jsonify({"error": str(e)})
 
-def process_task(task_id, text_file, voice_name):
+def process_task(task_id, text_file, voice_name, img_path):
     """处理生成视频的任务"""
     try:
         # 更新任务状态
@@ -184,8 +198,9 @@ def process_task(task_id, text_file, voice_name):
         tasks[task_id]["progress"] = 20
         tasks[task_id]["message"] = "正在生成视频..."
         
-        # 调用生成函数
-        output_path = generate_audio_srt_to_video(text_file, voice_name)
+        # 调用生成函数用户可以选择传入图片
+        
+        output_path = generate_audio_srt_to_video(text_file, voice_name, img_path)
         print(f"生成的视频路径: {output_path}")
         
         # 获取生成的视频文件名（应该是类似 merged_20250403_145255.mp4 的格式）

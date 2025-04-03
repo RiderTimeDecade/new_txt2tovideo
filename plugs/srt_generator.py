@@ -71,7 +71,7 @@ def find_sentence_timestamps(sentence, timestamps, start_idx):
     matched_chars = []
     
     # 移除标点符号以便更好地匹配
-    clean_sentence = ''.join(char for char in sentence if char not in ['。', '！', '？', '…', '「', '」'])
+    clean_sentence = ''.join(char for char in sentence if char not in ['。', '！', '？', '…',",","."])
     sentence_chars = list(clean_sentence)
     current_pos = 0
     
@@ -98,12 +98,13 @@ def find_sentence_timestamps(sentence, timestamps, start_idx):
     
     return start_time, end_time, idx, matched_chars
 
-def generate_srt_entries(text, timestamps):
+def generate_srt_entries(text, timestamps, voice_name):
     """根据时间戳生成SRT条目，每行字幕包含10-15个词
     
     Args:
         text (str): 原始文本（在此函数中不使用）
         timestamps (list): 时间戳列表，每个元素包含 text, offset, duration
+        voice_name (str): 语音名称
         
     Returns:
         list: SRT条目列表
@@ -116,20 +117,35 @@ def generate_srt_entries(text, timestamps):
     }
     word_count = 0
     
+    # 定义标点符号列表
+    punctuation = [',', '.', '!', '?', '/', '-', '—', '"', "'"]
+    
     for i, ts in enumerate(timestamps):
         # 如果是新的字幕条目开始
         if current_entry['start_time'] is None:
             current_entry['start_time'] = ts['offset']
         
-        # 添加当前词到字幕文本，并在词之间添加空格
-        current_entry['text'].append(ts['text'] + ' ')
+        # 获取当前词
+        current_word = ts['text'].replace("？"," ").replace("！"," ")
+        
+        # 检查是否需要添加空格
+        if "zh" in voice_name:
+            # 中文不需要空格
+            current_entry['text'].append(current_word)
+        else:
+            # 英文：如果当前词是标点符号，直接添加；如果不是且不是第一个词，前面加空格
+            if len(current_entry['text']) > 0 and not any(current_word.startswith(p) for p in punctuation):
+                current_entry['text'].append(' ' + current_word)
+            else:
+                current_entry['text'].append(current_word)
+        
         word_count += 1
         current_entry['end_time'] = ts['offset'] + ts['duration']
         
         # 当词数达到10个或更多，且当前是最后一个时间戳时，生成字幕条目
-        if word_count >= 10 and (i == len(timestamps) - 1 or word_count >= 15):
-            # 合并文本并去除最后一个空格
-            entry_text = ''.join(current_entry['text']).strip()
+        if word_count >= 8 and (i == len(timestamps) - 1 or word_count >= 10):
+            # 合并文本
+            entry_text = ''.join(current_entry['text'])
             
             # 添加到字幕条目列表
             srt_entries.append({
@@ -146,6 +162,16 @@ def generate_srt_entries(text, timestamps):
                 'end_time': None
             }
             word_count = 0
+    
+    # 处理最后一个条目（如果有）
+    if word_count > 0:
+        entry_text = ''.join(current_entry['text'])
+        srt_entries.append({
+            'index': len(srt_entries) + 1,
+            'start': current_entry['start_time'],
+            'end': current_entry['end_time'],
+            'text': entry_text
+        })
     
     return srt_entries
 

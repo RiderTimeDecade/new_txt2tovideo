@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const text = textInput.value.trim();
         const voice = voiceSelect.value;
+        const imageFile = document.getElementById('imageInput').files[0];
         
         if (!text) {
             showError('请输入要转换的文本');
@@ -149,16 +150,18 @@ document.addEventListener('DOMContentLoaded', function() {
         taskMessage.textContent = '准备中...';
         downloadSection.style.display = 'none';
         
+        // 创建 FormData 对象
+        const formData = new FormData();
+        formData.append('text', text);
+        formData.append('voice', voice);
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+        
         // 发送生成请求
         fetch('/api/generate', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                text: text,
-                voice: voice
-            })
+            body: formData
         })
         .then(response => response.json())
         .then(data => {
@@ -172,6 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 重置表单
             textInput.value = '';
             voiceSelect.value = '';
+            document.getElementById('imageInput').value = '';
             generateBtn.disabled = false;
             
             // 刷新任务列表
@@ -228,6 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
         taskCard.style.display = 'none';
         currentTaskId = null;
         currentFileId = null;
+        document.getElementById('imageInput').value = '';
     }
     
     // 显示错误信息
