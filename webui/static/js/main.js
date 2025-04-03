@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // 获取DOM元素
-    const generateForm = document.getElementById('generateForm');
+    const form = document.getElementById('generateForm');
     const textInput = document.getElementById('textInput');
     const voiceSelect = document.getElementById('voiceSelect');
     const generateBtn = document.getElementById('generateBtn');
@@ -9,58 +9,129 @@ document.addEventListener('DOMContentLoaded', function() {
     const taskMessage = document.getElementById('taskMessage');
     const downloadSection = document.getElementById('downloadSection');
     const downloadBtn = document.getElementById('downloadBtn');
+    const errorToast = document.getElementById('errorToast');
+    const errorMessage = document.getElementById('errorMessage');
     
-    // 当前任务ID
+    // 任务列表元素
+    const runningTasks = document.getElementById('runningTasks');
+    const queuedTasks = document.getElementById('queuedTasks');
+    const completedTasks = document.getElementById('completedTasks');
+    
+    // 初始化变量
     let currentTaskId = null;
     let currentFileId = null;
+    let taskStatusInterval = null;
     
-    // 加载可用的语音列表
-    loadVoices();
-    
-    // 加载语音列表
+    // 加载可用的语音选项
     function loadVoices() {
         fetch('/api/voices')
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    // 清空选项
-                    voiceSelect.innerHTML = '';
-                    
-                    // 添加默认选项
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = '请选择语音';
-                    defaultOption.selected = true;
-                    defaultOption.disabled = true;
-                    voiceSelect.appendChild(defaultOption);
-                    
-                    // 添加语音选项
-                    for (const [name, id] of Object.entries(data.voices)) {
-                        const option = document.createElement('option');
-                        option.value = id;
-                        option.textContent = name;
-                        voiceSelect.appendChild(option);
-                    }
-                } else {
-                    showError('加载语音列表失败: ' + data.error);
+                if (data.error) {
+                    throw new Error(data.error);
                 }
+                voiceSelect.innerHTML = '<option value="" selected disabled>请选择语音...</option>';
+                data.voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.id;
+                    option.textContent = voice.name;
+                    voiceSelect.appendChild(option);
+                });
             })
-            .catch(error => {
-                showError('加载语音列表出错: ' + error.message);
-            });
+            .catch(error => showError('加载语音选项失败：' + error.message));
     }
     
-    // 表单提交处理
-    generateForm.addEventListener('submit', function(e) {
+    // 刷新任务列表
+    function refreshTaskList() {
+        fetch('/api/tasks')
+            .then(response => response.json())
+            .then(data => {
+                // 清空现有列表
+                runningTasks.innerHTML = '';
+                queuedTasks.innerHTML = '';
+                completedTasks.innerHTML = '';
+                
+                // 分类显示任务
+                data.tasks.forEach(task => {
+                    const taskElement = createTaskListItem(task);
+                    switch(task.status) {
+                        case 'processing':
+                            runningTasks.appendChild(taskElement);
+                            break;
+                        case 'queued':
+                            queuedTasks.appendChild(taskElement);
+                            break;
+                        case 'completed':
+                        case 'failed':
+                            completedTasks.appendChild(taskElement);
+                            break;
+                    }
+                });
+            })
+            .catch(error => console.error('刷新任务列表失败：', error));
+    }
+    
+    // 创建任务列表项
+    function createTaskListItem(task) {
+        const item = document.createElement('div');
+        item.className = 'list-group-item';
+        
+        const statusClass = {
+            'queued': 'text-warning',
+            'processing': 'text-primary',
+            'completed': 'text-success',
+            'failed': 'text-danger'
+        }[task.status];
+        
+        const statusText = {
+            'queued': '等待中',
+            'processing': '处理中',
+            'completed': '已完成',
+            'failed': '失败'
+        }[task.status];
+        
+        let html = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">${task.text.substring(0, 50)}${task.text.length > 50 ? '...' : ''}</h6>
+                    <small class="text-muted">创建时间：${new Date(task.created_at).toLocaleString()}</small>
+                </div>
+                <span class="badge ${statusClass}">${statusText}</span>
+            </div>
+        `;
+        
+        if (task.status === 'processing') {
+            html += `
+                <div class="progress mt-2" style="height: 5px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: ${task.progress || 0}%">
+                    </div>
+                </div>
+            `;
+        }
+        
+        if (task.status === 'completed' && task.file_id) {
+            html += `
+                <div class="mt-2">
+                    <a href="/api/download/${task.file_id}" class="btn btn-sm btn-success">下载视频</a>
+                </div>
+            `;
+        }
+        
+        item.innerHTML = html;
+        return item;
+    }
+    
+    // 处理表单提交
+    form.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // 获取表单数据
         const text = textInput.value.trim();
         const voice = voiceSelect.value;
         
-        // 验证表单
         if (!text) {
-            showError('请输入文本');
+            showError('请输入要转换的文本');
             return;
         }
         
@@ -71,16 +142,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 禁用生成按钮
         generateBtn.disabled = true;
-        generateBtn.innerHTML = '<span class="loading"></span> 处理中...';
         
         // 显示任务卡片
-        taskCard.classList.remove('d-none');
-        taskCard.classList.add('visible');
+        taskCard.style.display = 'block';
         progressBar.style.width = '0%';
-        taskMessage.textContent = '正在提交任务...';
-        downloadSection.classList.add('d-none');
+        taskMessage.textContent = '准备中...';
+        downloadSection.style.display = 'none';
         
-        // 发送请求
+        // 发送生成请求
         fetch('/api/generate', {
             method: 'POST',
             headers: {
@@ -93,91 +162,85 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                // 保存任务ID和文件ID
-                currentTaskId = data.task_id;
-                
-                // 开始轮询任务状态
-                pollTaskStatus();
-            } else {
-                showError('提交任务失败: ' + data.error);
-                resetForm();
+            if (data.error) {
+                throw new Error(data.error);
             }
+            
+            currentTaskId = data.task_id;
+            pollTaskStatus();
+            
+            // 重置表单
+            textInput.value = '';
+            voiceSelect.value = '';
+            generateBtn.disabled = false;
+            
+            // 刷新任务列表
+            refreshTaskList();
         })
         .catch(error => {
-            showError('提交任务出错: ' + error.message);
+            showError(error.message);
             resetForm();
         });
     });
     
     // 轮询任务状态
     function pollTaskStatus() {
-        if (!currentTaskId) return;
+        if (taskStatusInterval) {
+            clearInterval(taskStatusInterval);
+        }
         
-        fetch(`/api/task/${currentTaskId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const task = data.task;
-                    
-                    // 更新进度条和消息
-                    progressBar.style.width = `${task.progress}%`;
-                    taskMessage.textContent = task.message;
-                    
-                    // 保存文件ID
-                    currentFileId = task.file_id;
-                    
-                    // 根据任务状态处理
-                    if (task.status === 'completed') {
-                        // 任务完成
-                        generateBtn.disabled = false;
-                        generateBtn.innerHTML = '<i class="bi bi-play-fill"></i> 生成视频';
-                        
-                        // 显示下载按钮
-                        downloadSection.classList.remove('d-none');
-                        downloadBtn.href = `/api/download/${currentFileId}`;
-                    } else if (task.status === 'failed') {
-                        // 任务失败
-                        showError(task.message);
-                        resetForm();
-                    } else {
-                        // 任务仍在处理中，继续轮询
-                        setTimeout(pollTaskStatus, 2000);
+        taskStatusInterval = setInterval(() => {
+            fetch(`/api/task/${currentTaskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
                     }
-                } else {
-                    showError('获取任务状态失败: ' + data.error);
+                    
+                    const task = data.task;
+                    progressBar.style.width = `${task.progress || 0}%`;
+                    taskMessage.textContent = task.message || '处理中...';
+                    
+                    if (task.status === 'completed') {
+                        clearInterval(taskStatusInterval);
+                        currentFileId = task.file_id;
+                        downloadSection.style.display = 'block';
+                        downloadBtn.href = `/api/download/${task.file_id}`;
+                        refreshTaskList();
+                    } else if (task.status === 'failed') {
+                        clearInterval(taskStatusInterval);
+                        showError(task.message || '任务处理失败');
+                        resetForm();
+                        refreshTaskList();
+                    }
+                })
+                .catch(error => {
+                    clearInterval(taskStatusInterval);
+                    showError(error.message);
                     resetForm();
-                }
-            })
-            .catch(error => {
-                showError('获取任务状态出错: ' + error.message);
-                resetForm();
-            });
+                });
+        }, 1000);
     }
     
-    // 重置表单
+    // 重置表单状态
     function resetForm() {
         generateBtn.disabled = false;
-        generateBtn.innerHTML = '<i class="bi bi-play-fill"></i> 生成视频';
+        taskCard.style.display = 'none';
+        currentTaskId = null;
+        currentFileId = null;
     }
     
-    // 显示错误消息
+    // 显示错误信息
     function showError(message) {
-        // 创建错误提示元素
-        const errorAlert = document.createElement('div');
-        errorAlert.className = 'alert alert-danger alert-dismissible fade show mt-3';
-        errorAlert.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        
-        // 添加到表单后面
-        generateForm.parentNode.insertBefore(errorAlert, generateForm.nextSibling);
-        
-        // 5秒后自动关闭
-        setTimeout(() => {
-            errorAlert.classList.remove('show');
-            setTimeout(() => errorAlert.remove(), 150);
-        }, 5000);
+        errorMessage.textContent = message;
+        const toast = new bootstrap.Toast(errorToast);
+        toast.show();
     }
+    
+    // 初始化
+    loadVoices();
+    refreshTaskList();
+    
+    // 定期刷新任务列表
+    setInterval(refreshTaskList, 5000);
 }); 

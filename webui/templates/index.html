@@ -4,64 +4,102 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文本转视频生成器</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <header class="text-center my-5">
-            <h1>文本转视频生成器</h1>
+    <div class="container mt-5">
+        <header class="text-center mb-5">
+            <h1 class="display-4">文本转视频生成器</h1>
             <p class="lead">输入文本，选择语音，生成带有字幕的视频</p>
         </header>
 
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card shadow">
+        <div class="row">
+            <!-- 左侧：输入表单 -->
+            <div class="col-md-6">
+                <div class="card shadow-sm">
                     <div class="card-body">
+                        <h5 class="card-title mb-4">生成新视频</h5>
                         <form id="generateForm">
                             <div class="mb-3">
                                 <label for="textInput" class="form-label">输入文本</label>
-                                <textarea class="form-control" id="textInput" rows="10" placeholder="请输入要转换为视频的文本..."></textarea>
+                                <textarea class="form-control" id="textInput" rows="6" placeholder="请输入要转换为视频的文本..."></textarea>
                             </div>
-                            
                             <div class="mb-3">
                                 <label for="voiceSelect" class="form-label">选择语音</label>
                                 <select class="form-select" id="voiceSelect">
-                                    <option value="" selected disabled>加载中...</option>
+                                    <option value="" selected disabled>请选择语音...</option>
                                 </select>
                             </div>
-                            
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary" id="generateBtn">
-                                    <i class="bi bi-play-fill"></i> 生成视频
-                                </button>
-                            </div>
+                            <button type="submit" class="btn btn-primary w-100" id="generateBtn">生成视频</button>
                         </form>
                     </div>
                 </div>
-                
-                <!-- 任务状态卡片 -->
-                <div class="card shadow mt-4 d-none" id="taskCard">
+            </div>
+
+            <!-- 右侧：任务状态和列表 -->
+            <div class="col-md-6">
+                <!-- 当前任务状态 -->
+                <div class="card shadow-sm mb-4" id="taskCard" style="display: none;">
                     <div class="card-body">
-                        <h5 class="card-title">任务状态</h5>
+                        <h5 class="card-title mb-3">当前任务状态</h5>
                         <div class="progress mb-3">
                             <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" role="progressbar" style="width: 0%"></div>
                         </div>
                         <p id="taskMessage" class="mb-3">准备中...</p>
-                        <div class="d-grid gap-2 d-none" id="downloadSection">
-                            <a href="#" class="btn btn-success" id="downloadBtn">
-                                <i class="bi bi-download"></i> 下载视频
-                            </a>
+                        <div id="downloadSection" style="display: none;">
+                            <a href="#" class="btn btn-success w-100" id="downloadBtn">下载视频</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 任务列表 -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">任务列表</h5>
+                        
+                        <!-- 运行中的任务 -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">运行中的任务</h6>
+                            <div class="list-group" id="runningTasks">
+                                <!-- 运行中的任务将在这里动态添加 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 等待中的任务 -->
+                        <div class="mb-4">
+                            <h6 class="text-warning mb-3">等待中的任务</h6>
+                            <div class="list-group" id="queuedTasks">
+                                <!-- 等待中的任务将在这里动态添加 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 已完成的任务 -->
+                        <div>
+                            <h6 class="text-success mb-3">已完成的任务</h6>
+                            <div class="list-group" id="completedTasks">
+                                <!-- 已完成的任务将在这里动态添加 -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <footer class="text-center mt-5 mb-3">
-            <p class="text-muted">© 2023 文本转视频生成器</p>
+
+        <footer class="text-center mt-5 text-muted">
+            <p>© 2023 文本转视频生成器 | 版权所有</p>
         </footer>
+    </div>
+
+    <!-- 错误提示 -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <strong class="me-auto">错误</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="errorMessage"></div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

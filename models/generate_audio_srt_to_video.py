@@ -53,11 +53,11 @@ def generate_audio_srt_to_video(text_path,voice_name):
         # 合并所有视频片段
         print("正在合并所有视频片段...")
         video_dir = "output/temp"
-        output_file = "output/final_video.mp4"
-        mult_to_one(video_dir, output_file)
-        print(f"视频合并完成: {output_file}")
+        #output_file = "output/final_video.mp4"
+        video_path = mult_to_one(video_dir)
+        #print(f"视频合并完成: {output_file}")
         
-        return output_file
+        return video_path
         
     except Exception as e:
         print(f"生成视频时出错: {str(e)}")

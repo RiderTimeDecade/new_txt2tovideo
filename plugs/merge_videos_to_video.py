@@ -5,7 +5,7 @@ from typing import List, Optional
 import time
 
 def mult_to_one(input_dir: str = "output", 
-                output_file: str = "output/final_merged_video.mp4", 
+                output_file: str = "", 
                 file_pattern: str = "[0-9]*.mp4",
                 sort_by_number: bool = True) -> None:
     """
@@ -21,7 +21,7 @@ def mult_to_one(input_dir: str = "output",
     output_file = f"output/merged_{timestamp}.mp4"
     try:
         # 确保输出目录存在
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        # os.makedirs(os.path.dirname(output_file), exist_ok=True)
         
         # 获取所有符合条件的视频文件
         video_files = glob.glob(os.path.join(input_dir, file_pattern))
@@ -75,8 +75,8 @@ def mult_to_one(input_dir: str = "output",
             raise RuntimeError(f"视频合并失败: {result.stderr}")
         
         print(f"视频合并成功: {output_file}")
-        print(f"合并了 {len(video_files)} 个视频文件")
-        
+        #print(f"合并了 {len(video_files)} 个视频文件")
+        return output_file
     except Exception as e:
         print(f"视频合并时出错: {str(e)}")
         raise
