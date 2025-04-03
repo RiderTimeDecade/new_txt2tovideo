@@ -7,12 +7,25 @@ from plugs.config import create_speech_config, DEFAULT_SUBSCRIPTION_KEY, DEFAULT
 from plugs.file_utils import read_text_file
 from plugs.speech_synthesis import synthesize_speech_with_timestamps
 from plugs.srt_generator import generate_srt_entries, write_srt_file
+from plugs.sd_txt_to_pic import sd_to_pic
+
 
 def generate_audio_srt_to_video(text_path,voice_name):
     """主函数"""
     # 读取文本
     text = read_text_file(text_path)
     #每 2000 个字符分割一次
+    # 文生图
+    try:
+        img_path = sd_to_pic(text[0:200],"output")
+        if img_path is None:
+            print("文生图失败，使用默认图片")
+            img_path = "data/pic.png"
+    except Exception as e:
+        print(f"文生图过程出错: {str(e)}，将使用默认图片")
+        img_path = "data/pic.png"
+
+
     text_chunks = [text[i:i+2000] for i in range(0, len(text), 2000)]
     #file_name 为 for 循环的 index
     for i, text_chunk in enumerate(text_chunks):
@@ -22,10 +35,9 @@ def generate_audio_srt_to_video(text_path,voice_name):
         audio_path = f"output/temp/{i + 1}.wav"
         srt_path = f"output/temp/{i + 1}.srt"
         effect_path = f"config/effect/effect.mov"
-        pic_path = "data/pic.png"
         output_path = f"output/temp/{i + 1}.mp4"
 
-        merge_to_video(audio_path, srt_path, effect_path, pic_path, output_path)
+        merge_to_video(audio_path, srt_path, effect_path, img_path, output_path)
         
 
     video_dir = "output/temp"
