@@ -22,34 +22,34 @@ def merge_videos_with_blend_lighten(input_files, output_file):
     ], capture_output=True, text=True)
     width, height = map(int, probe.stdout.strip().split('x'))
 
-    # 构建输入参数
-    input_args = "".join([f"-i \"{file}\" " for file in input_files])
-    
     # 构建 filter_complex
-    # 1. 调整特效视频的大小以匹配基础视频
-    # 2. 使用 loop 滤镜使特效视频循环播放
-    # 3. 使用 blend=lighten 合并视频
-    filter_complex = f"""
-        [1:v]scale={width}:{height},format=yuva420p[scaled];
-        [scaled]loop=loop=-1:size=500,setpts=PTS-STARTPTS[loopv];
-        [0:v][loopv]blend=lighten[outv]
-    """
+    filter_complex = f'[1:v]scale={width}:{height},format=yuva420p[scaled];[scaled]loop=loop=-1:size=500,setpts=PTS-STARTPTS[loopv];[0:v][loopv]blend=lighten[outv]'
 
-    # 构建完整的 FFmpeg 命令
-    command = f"""ffmpeg {input_args} -filter_complex "{filter_complex}" \
-            -map "[outv]" -map 0:a \
-            -c:v libx264 -crf 23 -preset veryfast \
-            -c:a aac -b:a 128k \
-            -shortest \
-            "{output_file}" """
+    # 构建 FFmpeg 命令数组
+    command = [
+        'ffmpeg',
+        '-i', input_files[0],
+        '-i', input_files[1],
+        '-filter_complex', filter_complex,
+        '-map', '[outv]',
+        '-map', '0:a',
+        '-c:v', 'libx264',
+        '-crf', '23',
+        '-preset', 'veryfast',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-shortest',
+        output_file
+    ]
     
-    print("执行的命令：", command)
+    print("执行的命令：", ' '.join(command))
     
     try:
-        subprocess.run(command, shell=True, check=True)
+        subprocess.run(command, check=True)
         print(f"视频合并成功！输出文件: {output_file}")
     except subprocess.CalledProcessError as e:
         print("视频合并过程中出错:", e)
+        raise
 
 def get_video_duration(video_file):
     """
