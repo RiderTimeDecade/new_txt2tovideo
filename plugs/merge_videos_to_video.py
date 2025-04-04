@@ -3,7 +3,7 @@ import subprocess
 import glob
 from typing import List, Optional
 import time
-
+from .add_effect_video import merge_videos_with_blend_lighten
 def mult_to_one(input_dir: str = "output", 
                 output_file: str = "", 
                 file_pattern: str = "[0-9]*.mp4",
@@ -18,7 +18,7 @@ def mult_to_one(input_dir: str = "output",
     """
     # 使用时间生成文件名
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_file = f"output/merged_{timestamp}.mp4"
+    output_file = f"output/temp/merged_{timestamp}.mp4"
     try:
         # 确保输出目录存在
         # os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -75,7 +75,10 @@ def mult_to_one(input_dir: str = "output",
             raise RuntimeError(f"视频合并失败: {result.stderr}")
         
         print(f"视频合并成功: {output_file}")
+        
+        merge_videos_with_blend_lighten([output_file,"data/effect.mp4"],f"output/{timestamp}.mp4")
         #print(f"合并了 {len(video_files)} 个视频文件")
+        output_file = f"output/{timestamp}.mp4"
         return output_file
     except Exception as e:
         print(f"视频合并时出错: {str(e)}")
