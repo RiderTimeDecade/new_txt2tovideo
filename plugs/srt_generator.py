@@ -99,7 +99,7 @@ def find_sentence_timestamps(sentence, timestamps, start_idx):
     return start_time, end_time, idx, matched_chars
 
 def generate_srt_entries(text, timestamps, voice_name):
-    """根据时间戳生成SRT条目，每行字幕包含10-15个词
+    """根据时间戳生成SRT条目，按照标点符号分行
     
     Args:
         text (str): 原始文本（在此函数中不使用）
@@ -115,10 +115,13 @@ def generate_srt_entries(text, timestamps, voice_name):
         'start_time': None,
         'end_time': None
     }
-    word_count = 0
     
-    # 定义标点符号列表
-    punctuation = [',', '.', '!', '?', '/', '-', '—', '"', "'"]
+    # 定义分行标点符号
+    zh_split_punctuation = ['，', '。']
+    en_split_punctuation = [',', '.']
+    
+    # 其他标点符号（不需要加空格）
+    other_punctuation = ['!', '?', '/', '-', '—', '"', "'", '！', '？']
     
     for i, ts in enumerate(timestamps):
         # 如果是新的字幕条目开始
@@ -126,45 +129,65 @@ def generate_srt_entries(text, timestamps, voice_name):
             current_entry['start_time'] = ts['offset']
         
         # 获取当前词
-        current_word = ts['text'].replace("？"," ").replace("！"," ")
+        current_word = ts['text']
         
         # 检查是否需要添加空格
         if "zh" in voice_name:
             # 中文不需要空格
             current_entry['text'].append(current_word)
+            
+            # 检查是否需要分行（遇到中文分行标点）
+            if any(p in current_word for p in zh_split_punctuation):
+                # 合并文本
+                entry_text = ''.join(current_entry['text'])
+                
+                # 添加到字幕条目列表
+                srt_entries.append({
+                    'index': len(srt_entries) + 1,
+                    'start': current_entry['start_time'],
+                    'end': ts['offset'] + ts['duration'],
+                    'text': entry_text
+                })
+                
+                # 重置当前条目
+                current_entry = {
+                    'text': [],
+                    'start_time': None,
+                    'end_time': None
+                }
         else:
             # 英文：如果当前词是标点符号，直接添加；如果不是且不是第一个词，前面加空格
-            if len(current_entry['text']) > 0 and not any(current_word.startswith(p) for p in punctuation):
+            if len(current_entry['text']) > 0 and not any(current_word.startswith(p) for p in en_split_punctuation + other_punctuation):
                 current_entry['text'].append(' ' + current_word)
             else:
                 current_entry['text'].append(current_word)
-        
-        word_count += 1
-        current_entry['end_time'] = ts['offset'] + ts['duration']
-        
-        # 当词数达到10个或更多，且当前是最后一个时间戳时，生成字幕条目
-        if word_count >= 8 and (i == len(timestamps) - 1 or word_count >= 10):
-            # 合并文本
-            entry_text = ''.join(current_entry['text'])
             
-            # 添加到字幕条目列表
-            srt_entries.append({
-                'index': len(srt_entries) + 1,
-                'start': current_entry['start_time'],
-                'end': current_entry['end_time'],
-                'text': entry_text
-            })
-            
-            # 重置当前条目
-            current_entry = {
-                'text': [],
-                'start_time': None,
-                'end_time': None
-            }
-            word_count = 0
+            # 检查是否需要分行（遇到英文分行标点）
+            if any(p in current_word for p in en_split_punctuation):
+                # 合并文本
+                entry_text = ''.join(current_entry['text'])
+                
+                # 添加到字幕条目列表
+                srt_entries.append({
+                    'index': len(srt_entries) + 1,
+                    'start': current_entry['start_time'],
+                    'end': ts['offset'] + ts['duration'],
+                    'text': entry_text
+                })
+                
+                # 重置当前条目
+                current_entry = {
+                    'text': [],
+                    'start_time': None,
+                    'end_time': None
+                }
+        
+        # 更新当前条目的结束时间
+        if current_entry['text']:
+            current_entry['end_time'] = ts['offset'] + ts['duration']
     
     # 处理最后一个条目（如果有）
-    if word_count > 0:
+    if current_entry['text']:
         entry_text = ''.join(current_entry['text'])
         srt_entries.append({
             'index': len(srt_entries) + 1,
