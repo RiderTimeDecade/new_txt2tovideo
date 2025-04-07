@@ -5,7 +5,8 @@ from plugs.merge_videos_to_video import mult_to_one
 # 导入插件模块
 from plugs.config import create_speech_config, DEFAULT_SUBSCRIPTION_KEY, DEFAULT_REGION, DEFAULT_VOICE_NAME
 from plugs.file_utils import read_text_file
-from plugs.speech_synthesis import synthesize_speech_with_timestamps
+# from plugs.speech_synthesis import synthesize_speech_with_timestamps
+from plugs.new_speech_synthesis import synthesize_speech_with_timestamps
 from plugs.srt_generator import generate_srt_entries, write_srt_file
 from plugs.sd_txt_to_pic import sd_to_pic
 import os
