@@ -1,14 +1,26 @@
 {
   "英文声音": {
-    "英文专业女声": "en-US-AriaNeural",
-    "英文正式女声": "en-US-JaneNeural",
-    "英文青年女声": "en-US-MonicaNeural",
-    "英文活泼女声": "en-US-AshleyNeural"
+    "Aria女声": "en-US-AriaNeural",
+    "Jenny女声": "en-US-JennyNeural",
+    "Guy男声": "en-US-GuyNeural",
+    "Tony男声": "en-US-TonyNeural",
+    "Jane女声": "en-US-JaneNeural",
+    "Nancy女声": "en-US-NancyNeural",
+    "Sara女声": "en-US-SaraNeural",
+    "Monica女声": "en-US-MonicaNeural",
+    "Ana女声": "en-US-AnaNeural",
+    "Ashley女声": "en-US-AshleyNeural"
   },
   "中文声音": {
-    "言情男声": "zh-CN-YunhaoNeural",
-    "言情女声": "zh-CN-XiaoxiaoNeural",
-    "恐怖声线": "zh-CN-XiaomoNeural",
-    "穿越声线": "zh-CN-YunxiNeural"
+    "云浩男声": "zh-CN-YunhaoNeural",
+    "云希男声": "zh-CN-YunxiNeural",
+    "云扬男声": "zh-CN-YunyangNeural",
+    "云枫男声": "zh-CN-YunfengNeural",
+    "晓晓女声": "zh-CN-XiaoxiaoNeural",
+    "晓伊女声": "zh-CN-XiaoyiNeural",
+    "晓陈女声": "zh-CN-XiaochenNeural",
+    "晓墨女声": "zh-CN-XiaomoNeural",
+    "晓秋女声": "zh-CN-XiaoqiuNeural",
+    "晓双女声": "zh-CN-XiaoshuangNeural"
   }
 }

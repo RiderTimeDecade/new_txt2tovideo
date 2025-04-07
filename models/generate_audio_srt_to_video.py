@@ -71,6 +71,7 @@ def generate_audio_srt_chunk(text_chunk,file_name,voice_name):
         region=DEFAULT_REGION,
         voice_name=voice_name
     )
+    text_chunk = text_chunk.replace("\n", " ")
     
     # 合成语音并获取时间戳
     result, timestamps = synthesize_speech_with_timestamps(text_chunk, speech_config,file_name)
