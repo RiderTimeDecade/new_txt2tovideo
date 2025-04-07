@@ -4,6 +4,9 @@ import glob
 from typing import List, Optional
 import time
 from .add_effect_video import merge_videos_with_blend_lighten
+
+
+
 def mult_to_one(input_dir: str = "output", 
                 output_file: str = "", 
                 file_pattern: str = "[0-9]*.mp4",
@@ -76,7 +79,7 @@ def mult_to_one(input_dir: str = "output",
         
         print(f"视频合并成功: {output_file}")
         
-        merge_videos_with_blend_lighten([output_file,"data/effect.mp4"],f"output/{timestamp}.mp4")
+        merge_videos_with_blend_lighten([output_file,"../config/effect/effect.mp4"],f"output/{timestamp}.mp4")
         #print(f"合并了 {len(video_files)} 个视频文件")
         output_file = f"output/{timestamp}.mp4"
         return output_file

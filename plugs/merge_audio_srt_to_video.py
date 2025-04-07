@@ -74,7 +74,7 @@ def merge_to_video(audio_path: str,
         if srt_path:
             srt_path = srt_path.replace('\\', '/').replace(':', '\\:')
             filter_complex[-1] = filter_complex[-1].replace('[video]', '[videotmp]')
-            filter_complex.append(f'[videotmp]subtitles={srt_path}:force_style=\'FontName=SimHei,FontSize=30,Bold=1,PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2,MarginV=30\'[video]')
+            filter_complex.append(f'[videotmp]subtitles={srt_path}:force_style=\'FontName=Arial Black,FontSize=30,Bold=1,PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2,MarginV=30\'[video]')
         
         # 添加滤镜链
         cmd.extend(['-filter_complex', ';'.join(filter_complex)])
