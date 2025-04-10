@@ -41,6 +41,14 @@ def worker():
             task_id, text_file, voice_name, img_path = task_data
             print(f"工作线程开始处理任务: {task_id}")
             
+            # 更新任务状态为处理中
+            task_manager.update_task_status(
+                task_id,
+                "processing",
+                progress=0,
+                message="任务开始处理..."
+            )
+            
             # 处理任务
             video_processor.process_video(task_id, text_file, voice_name, img_path)
             

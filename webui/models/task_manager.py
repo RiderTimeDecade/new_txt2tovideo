@@ -35,6 +35,8 @@ class TaskManager:
                 self.tasks[task_id]["progress"] = progress
             if message is not None:
                 self.tasks[task_id]["message"] = message
+            if status == "processing" and "started_at" not in self.tasks[task_id]:
+                self.tasks[task_id]["started_at"] = datetime.now().isoformat()
 
     def get_task(self, task_id):
         """获取任务信息"""

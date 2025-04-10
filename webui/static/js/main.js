@@ -22,6 +22,19 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentFileId = null;
     let taskStatusInterval = null;
     
+    // 格式化时间
+    function formatTime(timestamp) {
+        if (!timestamp) return '未开始';
+        return new Date(timestamp).toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+    
     // 加载可用的语音选项
     function loadVoices() {
         fetch('/api/voices')
@@ -46,27 +59,24 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/api/tasks')
             .then(response => response.json())
             .then(data => {
-                // 清空现有列表
-                runningTasks.innerHTML = '';
-                queuedTasks.innerHTML = '';
-                completedTasks.innerHTML = '';
-                
-                // 分类显示任务
-                data.tasks.forEach(task => {
-                    const taskElement = createTaskListItem(task);
-                    switch(task.status) {
-                        case 'processing':
+                if (data.success) {
+                    // 清空现有列表
+                    runningTasks.innerHTML = '';
+                    queuedTasks.innerHTML = '';
+                    completedTasks.innerHTML = '';
+                    
+                    // 处理每个任务
+                    data.tasks.forEach(task => {
+                        const taskElement = createTaskListItem(task);
+                        if (task.status === 'processing') {
                             runningTasks.appendChild(taskElement);
-                            break;
-                        case 'queued':
+                        } else if (task.status === 'queued') {
                             queuedTasks.appendChild(taskElement);
-                            break;
-                        case 'completed':
-                        case 'failed':
+                        } else if (task.status === 'completed') {
                             completedTasks.appendChild(taskElement);
-                            break;
-                    }
-                });
+                        }
+                    });
+                }
             })
             .catch(error => console.error('刷新任务列表失败：', error));
     }
@@ -90,20 +100,14 @@ document.addEventListener('DOMContentLoaded', function() {
             'failed': '失败'
         }[task.status];
         
-        // 格式化时间
-        const formatTime = (timestamp) => {
-            if (!timestamp) return '未开始';
-            return new Date(timestamp).toLocaleString();
-        };
-        
         let html = `
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h6 class="mb-1">${task.text.substring(0, 50)}${task.text.length > 50 ? '...' : ''}</h6>
                     <small class="text-muted">
                         创建时间：${formatTime(task.created_at)}<br>
-                       
-                        完成时间：${formatTime(task.completed_at)}
+                        ${task.started_at ? `开始时间：${formatTime(task.started_at)}<br>` : ''}
+                        ${task.completed_at ? `完成时间：${formatTime(task.completed_at)}` : ''}
                     </small>
                 </div>
                 <span class="badge ${statusClass}">${statusText}</span>
@@ -214,6 +218,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     const task = data.task;
                     progressBar.style.width = `${task.progress || 0}%`;
                     taskMessage.textContent = task.message || '处理中...';
+                    
+                    // 显示任务时间信息
+                    let timeInfo = `创建时间: ${formatTime(task.created_at)}`;
+                    if (task.started_at) {
+                        timeInfo += ` | 开始时间: ${formatTime(task.started_at)}`;
+                    }
+                    if (task.completed_at) {
+                        timeInfo += ` | 完成时间: ${formatTime(task.completed_at)}`;
+                    }
+                    document.getElementById('taskTimeInfo').textContent = timeInfo;
                     
                     if (task.status === 'completed') {
                         clearInterval(taskStatusInterval);

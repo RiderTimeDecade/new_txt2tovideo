@@ -52,6 +52,7 @@
                             <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" role="progressbar" style="width: 0%"></div>
                         </div>
                         <p id="taskMessage" class="mb-3">准备中...</p>
+                        <p id="taskTimeInfo" class="text-muted small mb-3">创建时间: -</p>
                         <div id="downloadSection" style="display: none;">
                             <a href="#" class="btn btn-success w-100" id="downloadBtn">下载视频</a>
                         </div>
@@ -71,12 +72,13 @@
                                 <div class="list-group-item">
                                     <div class="d-flex w-100 justify-content-between">
                                         <h6 class="mb-1">任务ID</h6>
-                                        <small class="text-muted">创建时间</small>
+                                        <small class="text-muted">开始时间</small>
                                     </div>
                                     <p class="mb-1">任务描述</p>
                                     <div class="progress">
                                         <div class="progress-bar" role="progressbar" style="width: 0%"></div>
                                     </div>
+                                    <small class="text-muted">创建时间</small>
                                 </div>
                             </div>
                         </div>
@@ -107,7 +109,10 @@
                                         <small class="text-muted">完成时间</small>
                                     </div>
                                     <p class="mb-1">任务描述</p>
-                                    <a href="#" class="btn btn-sm btn-success">下载</a>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">开始时间</small>
+                                        <a href="#" class="btn btn-sm btn-success">下载</a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
