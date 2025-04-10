@@ -1,279 +1,87 @@
 from flask import Flask, render_template, request, jsonify, send_file
 import os
 import sys
-import json
 import uuid
-from datetime import datetime
-import threading
-import queue
-import time
+import json
 
 # 添加项目根目录到系统路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# 导入项目模块
-from models.generate_audio_srt_to_video import generate_audio_srt_to_video
-from plugs.config import create_speech_config, DEFAULT_SUBSCRIPTION_KEY, DEFAULT_REGION
+# 导入自定义模块
+from models.task_manager import TaskManager
+from models.file_handler import FileHandler
+from models.video_processor import VideoProcessor
+from routes.task_routes import TaskRoutes
+from routes.download_routes import DownloadRoutes
+from routes.voice_routes import VoiceRoutes
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'data'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 限制上传文件大小为16MB
 
-# 确保上传目录存在
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs('output/temp', exist_ok=True)
+# 初始化管理器
+task_manager = TaskManager()
+file_handler = FileHandler(app.config['UPLOAD_FOLDER'], 'output/temp')
+video_processor = VideoProcessor(task_manager)
 
-# 任务状态存储
-tasks = {}
-# 任务队列
-task_queue = queue.Queue()
-# 任务处理线程
-worker_thread = None
+# 初始化路由处理器
+task_routes = TaskRoutes(task_manager, file_handler, video_processor)
+download_routes = DownloadRoutes(file_handler)
+voice_routes = VoiceRoutes()
 
 def worker():
     """工作线程，处理任务队列中的任务"""
-    global worker_thread
     while True:
         try:
             # 从队列中获取任务
-            task = task_queue.get(block=True, timeout=1)
-            if task is None:
-                break
+            task_data = task_manager.get_from_queue()
+            if task_data is None:
+                continue
                 
-            task_id, text_file, voice_name, img_path = task
+            task_id, text_file, voice_name, img_path = task_data
             print(f"工作线程开始处理任务: {task_id}")
             
             # 处理任务
-            process_task(task_id, text_file, voice_name, img_path)
+            video_processor.process_video(task_id, text_file, voice_name, img_path)
             
             # 标记任务完成
-            task_queue.task_done()
+            task_manager.task_done()
             
-        except queue.Empty:
-            # 队列为空，继续等待
-            continue
         except Exception as e:
             print(f"工作线程处理任务时出错: {str(e)}")
-            # 标记任务失败
-            if task_id in tasks:
-                tasks[task_id]["status"] = "failed"
-                tasks[task_id]["message"] = f"处理失败: {str(e)}"
-    
-    print("工作线程退出")
-    worker_thread = None
-
-def start_worker():
-    """启动工作线程"""
-    global worker_thread
-    if worker_thread is None or not worker_thread.is_alive():
-        worker_thread = threading.Thread(target=worker)
-        worker_thread.daemon = True
-        worker_thread.start()
-        print("工作线程已启动")
 
 # 启动工作线程
-start_worker()
+task_manager.start_worker(worker)
 
 @app.route('/')
 def index():
     """渲染主页"""
     return render_template('index.html')
 
-@app.route('/api/voices', methods=['GET'])
-def get_voices():
-    """获取可用的语音列表"""
-    try:
-        with open('../config/voice/voices.json', 'r', encoding='utf-8') as f:
-            voices_data = json.load(f)
-        
-        # 将嵌套的声音配置转换为列表格式
-        voices = []
-        for category, voice_dict in voices_data.items():
-            for voice_name, voice_id in voice_dict.items():
-                voices.append({
-                    "id": voice_id,
-                    "name": f"{category}-{voice_name}"
-                })
-        
-        return jsonify({"voices": voices})
-    except Exception as e:
-        return jsonify({"error": str(e)})
-
 @app.route('/api/generate', methods=['POST'])
 def generate_video():
     """生成视频的API端点"""
-    try:
-        # 获取表单数据
-        text = request.form.get('text', '')
-        voice_name = request.form.get('voice', '')
-        
-        if not text:
-            return jsonify({"error": "文本不能为空"})
-        
-        # 生成唯一文件名
-        file_id = str(uuid.uuid4())
-        text_file = os.path.join(app.config['UPLOAD_FOLDER'], f"{file_id}.txt")
-        
-        # 保存文本到文件
-        with open(text_file, 'w', encoding='utf-8') as f:
-            f.write(text)
-            
-        # 处理图片上传
-        img_path = None
-        if 'image' in request.files:
-            image = request.files['image']
-            if image and image.filename:
-                # 确保文件名安全
-                from werkzeug.utils import secure_filename
-                filename = secure_filename(image.filename)
-                # 生成唯一的图片文件名
-                img_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{file_id}_{filename}")
-                # 保存图片
-                image.save(img_path)
-                print(f"已保存上传的图片: {img_path}")
-        
-        # 创建任务ID
-        task_id = str(uuid.uuid4())
-        tasks[task_id] = {
-            "status": "queued",
-            "progress": 0,
-            "message": "任务已加入队列",
-            "file_id": file_id,
-            "created_at": datetime.now().isoformat(),
-            "text": text[:50] + "..." if len(text) > 50 else text,  # 保存文本预览
-            "voice": voice_name,
-            "has_image": bool(img_path)  # 记录是否使用了自定义图片
-        }
-        
-        # 将任务添加到队列
-        task_queue.put((task_id, text_file, voice_name, img_path))
-        
-        # 确保工作线程正在运行
-        start_worker()
-        
-        return jsonify({
-            "task_id": task_id,
-            "message": "任务已加入队列"
-        })
-    
-    except Exception as e:
-        print(f"生成视频时出错: {str(e)}")
-        return jsonify({"error": str(e)})
-
-def process_task(task_id, text_file, voice_name, img_path):
-    """处理生成视频的任务"""
-    try:
-        # 更新任务状态
-        tasks[task_id]["status"] = "processing"
-        tasks[task_id]["progress"] = 10
-        tasks[task_id]["message"] = "正在准备处理环境..."
-        
-        # 清空临时目录
-        temp_dir = 'output/temp'
-        if os.path.exists(temp_dir):
-            print(f"清空临时目录: {temp_dir}")
-            for file in os.listdir(temp_dir):
-                file_path = os.path.join(temp_dir, file)
-                try:
-                    if os.path.isfile(file_path):
-                        os.unlink(file_path)
-                    elif os.path.isdir(file_path):
-                        import shutil
-                        shutil.rmtree(file_path)
-                except Exception as e:
-                    print(f"删除文件 {file_path} 时出错: {str(e)}")
-        else:
-            os.makedirs(temp_dir, exist_ok=True)
-        
-        # 更新任务状态
-        tasks[task_id]["progress"] = 15
-        tasks[task_id]["message"] = "正在生成音频和字幕..."
-        
-        # 生成音频和字幕
-        print(f"开始处理任务 {task_id}")
-        print(f"文本文件: {text_file}")
-        print(f"语音名称: {voice_name}")
-        
-        # 更新任务状态
-        tasks[task_id]["progress"] = 20
-        tasks[task_id]["message"] = "正在生成视频..."
-        
-        # 调用生成函数用户可以选择传入图片
-        
-        output_path = generate_audio_srt_to_video(text_file, voice_name, img_path)
-        print(f"生成的视频路径: {output_path}")
-        
-        # 获取生成的视频文件名（应该是类似 merged_20250403_145255.mp4 的格式）
-        video_filename = os.path.basename(output_path)
-        
-        # 更新任务状态
-        tasks[task_id]["status"] = "completed"
-        tasks[task_id]["progress"] = 100
-        tasks[task_id]["message"] = "处理完成"
-        tasks[task_id]["file_id"] = video_filename  # 使用新的文件名
-        tasks[task_id]["completed_at"] = datetime.now().isoformat()
-        
-        print(f"任务 {task_id} 处理完成")
-        print(f"输出文件: {output_path}")
-        
-    except Exception as e:
-        # 更新任务状态为失败
-        tasks[task_id]["status"] = "failed"
-        tasks[task_id]["message"] = f"处理失败: {str(e)}"
-        tasks[task_id]["error"] = str(e)
-        print(f"处理任务 {task_id} 出错: {str(e)}")
+    return task_routes.generate_video(request)
 
 @app.route('/api/task/<task_id>', methods=['GET'])
 def get_task_status(task_id):
     """获取任务状态"""
-    if task_id not in tasks:
-        return jsonify({"success": False, "error": "任务不存在"})
-    
-    return jsonify({
-        "success": True,
-        "task": tasks[task_id]
-    })
+    return task_routes.get_task_status(task_id)
 
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
     """获取所有任务列表"""
-    # 按创建时间倒序排序
-    sorted_tasks = sorted(
-        [{"id": task_id, **task_data} for task_id, task_data in tasks.items()],
-        key=lambda x: x["created_at"],
-        reverse=True
-    )
-    
-    return jsonify({
-        "success": True,
-        "tasks": sorted_tasks
-    })
+    return task_routes.get_tasks()
 
 @app.route('/api/download/<file_id>', methods=['GET'])
 def download_video(file_id):
     """下载生成的视频"""
-    try:
-        # 查找视频文件（先在 output/temp 目录中查找）
-        temp_dir = 'output/temp'
-        video_path = os.path.join(temp_dir, file_id)
-        
-        if not os.path.exists(video_path):
-            # 如果在 temp 目录中找不到，尝试在 output 目录中查找
-            output_dir = 'output'
-            video_path = os.path.join(output_dir, file_id)
-            if not os.path.exists(video_path):
-                return jsonify({"error": "视频文件不存在"})
-        
-        # 发送文件，使用原始文件名作为下载文件名
-        return send_file(
-            video_path,
-            as_attachment=True,
-            download_name=file_id,
-            mimetype='video/mp4'
-        )
-        
-    except Exception as e:
-        return jsonify({"error": str(e)})
+    return download_routes.download_video(file_id)
+
+@app.route('/api/voices', methods=['GET'])
+def get_voices():
+    """获取可用的语音列表"""
+    return voice_routes.get_voices()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 
