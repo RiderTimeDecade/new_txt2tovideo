@@ -90,11 +90,21 @@ document.addEventListener('DOMContentLoaded', function() {
             'failed': '失败'
         }[task.status];
         
+        // 格式化时间
+        const formatTime = (timestamp) => {
+            if (!timestamp) return '未开始';
+            return new Date(timestamp).toLocaleString();
+        };
+        
         let html = `
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h6 class="mb-1">${task.text.substring(0, 50)}${task.text.length > 50 ? '...' : ''}</h6>
-                    <small class="text-muted">创建时间：${new Date(task.created_at).toLocaleString()}</small>
+                    <small class="text-muted">
+                        创建时间：${formatTime(task.created_at)}<br>
+                       
+                        完成时间：${formatTime(task.completed_at)}
+                    </small>
                 </div>
                 <span class="badge ${statusClass}">${statusText}</span>
             </div>
