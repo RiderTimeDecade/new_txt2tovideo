@@ -65,17 +65,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     queuedTasks.innerHTML = '';
                     completedTasks.innerHTML = '';
                     
+                    // 跟踪任务计数
+                    let runningCount = 0;
+                    let queuedCount = 0;
+                    let completedCount = 0;
+                    
                     // 处理每个任务
                     data.tasks.forEach(task => {
                         const taskElement = createTaskListItem(task);
                         if (task.status === 'processing') {
                             runningTasks.appendChild(taskElement);
+                            runningCount++;
                         } else if (task.status === 'queued') {
                             queuedTasks.appendChild(taskElement);
+                            queuedCount++;
                         } else if (task.status === 'completed') {
                             completedTasks.appendChild(taskElement);
+                            completedCount++;
                         }
                     });
+                    
+                    // 显示或隐藏空状态提示
+                    document.getElementById('noRunningTasks').style.display = 
+                        runningCount === 0 ? 'block' : 'none';
+                    document.getElementById('noQueuedTasks').style.display = 
+                        queuedCount === 0 ? 'block' : 'none';
+                    document.getElementById('noCompletedTasks').style.display = 
+                        completedCount === 0 ? 'block' : 'none';
                 }
             })
             .catch(error => console.error('刷新任务列表失败：', error));
@@ -100,6 +116,28 @@ document.addEventListener('DOMContentLoaded', function() {
             'failed': '失败'
         }[task.status];
         
+        // 计算等待时间和处理时间
+        let waitTime = '';
+        let processTime = '';
+        
+        if (task.started_at && task.created_at) {
+            const startDate = new Date(task.started_at);
+            const createDate = new Date(task.created_at);
+            const waitMs = startDate - createDate;
+            const waitMinutes = Math.floor(waitMs / 60000);
+            const waitSeconds = Math.floor((waitMs % 60000) / 1000);
+            waitTime = `等待时间: ${waitMinutes}分${waitSeconds}秒`;
+        }
+        
+        if (task.completed_at && task.started_at) {
+            const completeDate = new Date(task.completed_at);
+            const startDate = new Date(task.started_at);
+            const processMs = completeDate - startDate;
+            const processMinutes = Math.floor(processMs / 60000);
+            const processSeconds = Math.floor((processMs % 60000) / 1000);
+            processTime = `处理时间: ${processMinutes}分${processSeconds}秒`;
+        }
+        
         let html = `
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -107,7 +145,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <small class="text-muted">
                         创建时间：${formatTime(task.created_at)}<br>
                         ${task.started_at ? `开始时间：${formatTime(task.started_at)}<br>` : ''}
-                        ${task.completed_at ? `完成时间：${formatTime(task.completed_at)}` : ''}
+                        ${task.completed_at ? `完成时间：${formatTime(task.completed_at)}<br>` : ''}
+                        ${waitTime ? `${waitTime}<br>` : ''}
+                        ${processTime ? `${processTime}` : ''}
                     </small>
                 </div>
                 <span class="badge ${statusClass}">${statusText}</span>
@@ -116,18 +156,19 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (task.status === 'processing') {
             html += `
-                <div class="progress mt-2" style="height: 5px;">
+                <div class="progress mt-2" style="height: 8px;">
                     <div class="progress-bar progress-bar-striped progress-bar-animated" 
                          role="progressbar" 
                          style="width: ${task.progress || 0}%">
                     </div>
                 </div>
+                <small class="text-muted mt-1 d-block text-end">${task.progress || 0}%</small>
             `;
         }
         
         if (task.status === 'completed' && task.file_id) {
             html += `
-                <div class="mt-2">
+                <div class="mt-2 text-end">
                     <a href="/api/download/${task.file_id}" class="btn btn-sm btn-success">下载视频</a>
                 </div>
             `;
@@ -217,17 +258,80 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     const task = data.task;
                     progressBar.style.width = `${task.progress || 0}%`;
+                    progressBar.textContent = `${task.progress || 0}%`;
                     taskMessage.textContent = task.message || '处理中...';
                     
-                    // 显示任务时间信息
-                    let timeInfo = `创建时间: ${formatTime(task.created_at)}`;
-                    if (task.started_at) {
-                        timeInfo += ` | 开始时间: ${formatTime(task.started_at)}`;
+                    // 计算时间信息
+                    let createTime = formatTime(task.created_at);
+                    let startTime = task.started_at ? formatTime(task.started_at) : '等待中';
+                    let completeTime = task.completed_at ? formatTime(task.completed_at) : '-';
+                    
+                    // 计算等待和处理时间
+                    let waitTime = '';
+                    let processTime = '';
+                    
+                    if (task.started_at && task.created_at) {
+                        const startDate = new Date(task.started_at);
+                        const createDate = new Date(task.created_at);
+                        const waitMs = startDate - createDate;
+                        const waitMinutes = Math.floor(waitMs / 60000);
+                        const waitSeconds = Math.floor((waitMs % 60000) / 1000);
+                        waitTime = `${waitMinutes}分${waitSeconds}秒`;
                     }
-                    if (task.completed_at) {
-                        timeInfo += ` | 完成时间: ${formatTime(task.completed_at)}`;
+                    
+                    if (task.status === 'processing' && task.started_at) {
+                        const now = new Date();
+                        const startDate = new Date(task.started_at);
+                        const processMs = now - startDate;
+                        const processMinutes = Math.floor(processMs / 60000);
+                        const processSeconds = Math.floor((processMs % 60000) / 1000);
+                        processTime = `${processMinutes}分${processSeconds}秒`;
+                    } else if (task.completed_at && task.started_at) {
+                        const completeDate = new Date(task.completed_at);
+                        const startDate = new Date(task.started_at);
+                        const processMs = completeDate - startDate;
+                        const processMinutes = Math.floor(processMs / 60000);
+                        const processSeconds = Math.floor((processMs % 60000) / 1000);
+                        processTime = `${processMinutes}分${processSeconds}秒`;
                     }
-                    document.getElementById('taskTimeInfo').textContent = timeInfo;
+                    
+                    // 构建时间信息HTML
+                    let timeInfoHtml = `
+                        <div class="d-flex flex-wrap" style="gap: 10px;">
+                            <div class="text-muted small">
+                                <i class="bi bi-calendar-plus"></i> 创建时间: ${createTime}
+                            </div>
+                            <div class="text-muted small">
+                                <i class="bi bi-play-circle"></i> 开始时间: ${startTime}
+                            </div>
+                    `;
+                    
+                    if (task.status === 'completed') {
+                        timeInfoHtml += `
+                            <div class="text-muted small">
+                                <i class="bi bi-check-circle"></i> 完成时间: ${completeTime}
+                            </div>
+                        `;
+                    }
+                    
+                    timeInfoHtml += `</div>`;
+                    
+                    if (waitTime || processTime) {
+                        timeInfoHtml += `
+                            <div class="d-flex flex-wrap mt-2" style="gap: 10px;">
+                                ${waitTime ? `
+                                <div class="text-muted small">
+                                    <i class="bi bi-hourglass-split"></i> 等待时间: ${waitTime}
+                                </div>` : ''}
+                                ${processTime ? `
+                                <div class="text-muted small">
+                                    <i class="bi bi-lightning-charge"></i> 处理时间: ${processTime}
+                                </div>` : ''}
+                            </div>
+                        `;
+                    }
+                    
+                    document.getElementById('taskTimeInfo').innerHTML = timeInfoHtml;
                     
                     if (task.status === 'completed') {
                         clearInterval(taskStatusInterval);
