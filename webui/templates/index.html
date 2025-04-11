@@ -9,85 +9,81 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container mt-5">
-        <header class="text-center mb-5">
-            <h1 class="display-4">文本转视频生成器</h1>
-            <p class="lead">输入文本，选择语音，生成带有字幕的视频</p>
+    <div class="container-fluid px-2 py-2">
+        <header class="text-center py-3">
+            <h3 class="mb-0">文本转视频生成器</h3>
+            <p class="small text-muted mb-0">输入文本，选择语音，生成带有字幕的视频</p>
         </header>
 
-        <div class="row">
+        <div class="row g-2">
             <!-- 左侧：输入表单 -->
-            <div class="col-md-6">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title mb-4"><i class="bi bi-file-earmark-text"></i> 生成新视频</h5>
+            <div class="col-md-5">
+                <div class="card h-100">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="card-title mb-0"><i class="bi bi-file-earmark-text"></i> 生成新视频</h6>
+                            <a href="#" id="toggleBatchMode" class="badge bg-light text-dark text-decoration-none">
+                                <i class="bi bi-folder"></i> 批量文件夹模式
+                            </a>
+                        </div>
                         <form id="generateForm">
-                            <div class="mb-3">
-                                <label for="textInput" class="form-label">输入文本</label>
-                                <textarea class="form-control" id="textInput" rows="6" placeholder="请输入要转换为视频的文本..."></textarea>
-                                <div class="form-text">
-                                    <a href="#" id="toggleBatchMode" class="text-decoration-none">
-                                        <i class="bi bi-folder"></i> 批量文件夹模式
-                                    </a>
-                                </div>
+                            <div class="mb-2">
+                                <textarea class="form-control form-control-sm" id="textInput" rows="5" placeholder="请输入要转换为视频的文本..."></textarea>
                             </div>
                             
-                            <div class="mb-3" id="batchOptionsSection" style="display: none;">
+                            <div class="mb-2" id="batchOptionsSection" style="display: none;">
                                 <div class="card bg-light">
-                                    <div class="card-body">
-                                        <h6 class="card-title">
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title small mb-2">
                                             <i class="bi bi-folder"></i> 批量文件夹处理
                                         </h6>
-                                        <div class="mb-3">
-                                            <label for="folderInput" class="form-label">选择文件夹</label>
-                                            <input type="file" class="form-control" id="folderInput" webkitdirectory directory multiple>
-                                            <div class="form-text">选择包含文本文件(.txt)和图片文件的文件夹</div>
+                                        <div class="mb-2">
+                                            <input type="file" class="form-control form-control-sm" id="folderInput" webkitdirectory directory multiple>
+                                            <div class="form-text small">选择包含文本和图片的文件夹 (.txt + .jpg/.png)</div>
                                         </div>
-                                        <div class="form-text mb-2">
-                                            <ul class="small text-muted mb-0">
-                                                <li>支持的文本格式: .txt</li>
-                                                <li>支持的图片格式: .jpg, .jpeg, .png</li>
-                                                <li>文本文件名与图片文件名需要匹配 (例如: text1.txt 对应 text1.png)</li>
-                                            </ul>
-                                        </div>
-                                        <div id="fileList" class="mt-2 small" style="max-height: 150px; overflow-y: auto;">
-                                        </div>
+                                        <div id="fileList" class="mt-2 small" style="max-height: 120px; overflow-y: auto;"></div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="mb-3" id="singleModeOptions">
-                                <label for="voiceSelect" class="form-label">选择语音</label>
-                                <select class="form-select" id="voiceSelect">
-                                    <option value="" selected disabled>请选择语音...</option>
-                                </select>
+                            <div class="row g-2">
+                                <div class="col-md-8" id="singleModeOptions">
+                                    <select class="form-select form-select-sm" id="voiceSelect">
+                                        <option value="" selected disabled>选择语音...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100" id="generateBtn">
+                                        <i class="bi bi-film"></i> 生成视频
+                                    </button>
+                                </div>
                             </div>
-                            <div class="mb-3" id="singleModeImageUpload">
-                                <label for="imageInput" class="form-label">上传背景图片（可选）</label>
-                                <input type="file" class="form-control" id="imageInput" accept="image/*">
-                                <div class="form-text">支持 jpg、png 格式的图片</div>
+                            
+                            <div class="mt-2" id="singleModeImageUpload">
+                                <input type="file" class="form-control form-control-sm" id="imageInput" accept="image/*">
+                                <div class="form-text small">上传背景图片（可选）</div>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100" id="generateBtn">
-                                <i class="bi bi-film"></i> 生成视频
-                            </button>
                         </form>
                     </div>
                 </div>
             </div>
 
             <!-- 右侧：任务状态和列表 -->
-            <div class="col-md-6">
+            <div class="col-md-7">
                 <!-- 当前任务状态 -->
-                <div class="card shadow-sm mb-4" id="taskCard" style="display: none;">
-                    <div class="card-body">
-                        <h5 class="card-title mb-3"><i class="bi bi-clock-history"></i> 当前任务状态</h5>
-                        <div class="progress mb-3">
+                <div class="card mb-2" id="taskCard" style="display: none;">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="card-title mb-0"><i class="bi bi-clock-history"></i> 当前任务状态</h6>
+                            <span class="badge bg-primary" id="taskProgress">0%</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 6px;">
                             <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" role="progressbar" style="width: 0%"></div>
                         </div>
-                        <p id="taskMessage" class="mb-3">准备中...</p>
-                        <p id="taskTimeInfo" class="text-muted small mb-3">创建时间: -</p>
+                        <p id="taskMessage" class="mb-1 small">准备中...</p>
+                        <p id="taskTimeInfo" class="text-muted small mb-2">创建时间: -</p>
                         <div id="downloadSection" style="display: none;">
-                            <a href="#" class="btn btn-success w-100" id="downloadBtn">
+                            <a href="#" class="btn btn-success btn-sm w-100" id="downloadBtn">
                                 <i class="bi bi-download"></i> 下载视频
                             </a>
                         </div>
@@ -95,60 +91,75 @@
                 </div>
 
                 <!-- 任务列表 -->
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title mb-3"><i class="bi bi-list-check"></i> 任务列表</h5>
+                <div class="card h-100">
+                    <div class="card-body p-3">
+                        <ul class="nav nav-tabs nav-fill mb-2 small" id="taskTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="running-tab" data-bs-toggle="tab" data-bs-target="#running-tab-pane" type="button" role="tab">
+                                    <i class="bi bi-play-circle"></i> 运行中 <span id="runningCount" class="badge bg-primary">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="queued-tab" data-bs-toggle="tab" data-bs-target="#queued-tab-pane" type="button" role="tab">
+                                    <i class="bi bi-hourglass-split"></i> 等待中 <span id="queuedCount" class="badge bg-warning text-dark">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-tab-pane" type="button" role="tab">
+                                    <i class="bi bi-check-circle"></i> 已完成 <span id="completedCount" class="badge bg-success">0</span>
+                                </button>
+                            </li>
+                        </ul>
                         
-                        <!-- 运行中的任务 -->
-                        <div class="mb-4">
-                            <h6 class="text-primary mb-3"><i class="bi bi-play-circle"></i> 运行中的任务</h6>
-                            <div class="list-group" id="runningTasks">
-                                <!-- 运行中的任务将在这里动态添加 -->
+                        <div class="tab-content" id="taskTabContent">
+                            <!-- 运行中的任务 -->
+                            <div class="tab-pane fade show active" id="running-tab-pane" role="tabpanel" tabindex="0">
+                                <div class="list-group list-group-flush small" id="runningTasks">
+                                    <!-- 运行中的任务将在这里动态添加 -->
+                                </div>
+                                <div class="text-center text-muted small py-2" id="noRunningTasks">
+                                    <i class="bi bi-info-circle"></i> 没有运行中的任务
+                                </div>
                             </div>
-                            <div class="text-center text-muted small py-2" id="noRunningTasks" style="display: none;">
-                                <i class="bi bi-info-circle"></i> 没有运行中的任务
+                            
+                            <!-- 等待中的任务 -->
+                            <div class="tab-pane fade" id="queued-tab-pane" role="tabpanel" tabindex="0">
+                                <div class="list-group list-group-flush small" id="queuedTasks">
+                                    <!-- 等待中的任务将在这里动态添加 -->
+                                </div>
+                                <div class="text-center text-muted small py-2" id="noQueuedTasks">
+                                    <i class="bi bi-info-circle"></i> 没有等待中的任务
+                                </div>
                             </div>
-                        </div>
-                        
-                        <!-- 等待中的任务 -->
-                        <div class="mb-4">
-                            <h6 class="text-warning mb-3"><i class="bi bi-hourglass-split"></i> 等待中的任务</h6>
-                            <div class="list-group" id="queuedTasks">
-                                <!-- 等待中的任务将在这里动态添加 -->
-                            </div>
-                            <div class="text-center text-muted small py-2" id="noQueuedTasks" style="display: none;">
-                                <i class="bi bi-info-circle"></i> 没有等待中的任务
-                            </div>
-                        </div>
-                        
-                        <!-- 已完成的任务 -->
-                        <div>
-                            <h6 class="text-success mb-3"><i class="bi bi-check-circle"></i> 已完成的任务</h6>
-                            <div class="list-group" id="completedTasks">
-                                <!-- 已完成的任务将在这里动态添加 -->
-                            </div>
-                            <div class="text-center text-muted small py-2" id="noCompletedTasks" style="display: none;">
-                                <i class="bi bi-info-circle"></i> 没有已完成的任务
+                            
+                            <!-- 已完成的任务 -->
+                            <div class="tab-pane fade" id="completed-tab-pane" role="tabpanel" tabindex="0">
+                                <div class="list-group list-group-flush small" id="completedTasks">
+                                    <!-- 已完成的任务将在这里动态添加 -->
+                                </div>
+                                <div class="text-center text-muted small py-2" id="noCompletedTasks">
+                                    <i class="bi bi-info-circle"></i> 没有已完成的任务
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <footer class="text-center mt-5 text-muted">
-            <p>© 2025 文本转视频生成器</p>
+        
+        <footer class="text-center mt-2">
+            <p class="text-muted small">© 2025 文本转视频生成器</p>
         </footer>
     </div>
 
     <!-- 错误提示 -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div class="toast-container position-fixed bottom-0 end-0 p-2" style="z-index: 1050;">
         <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header bg-danger text-white">
+            <div class="toast-header bg-danger text-white py-1">
                 <strong class="me-auto"><i class="bi bi-exclamation-triangle"></i> 错误</strong>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
-            <div class="toast-body" id="errorMessage"></div>
+            <div class="toast-body small py-2" id="errorMessage"></div>
         </div>
     </div>
 

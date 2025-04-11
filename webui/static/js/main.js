@@ -210,6 +210,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                     
+                    // 更新任务计数
+                    document.getElementById('runningCount').textContent = runningCount;
+                    document.getElementById('queuedCount').textContent = queuedCount;
+                    document.getElementById('completedCount').textContent = completedCount;
+                    
                     // 显示或隐藏空状态提示
                     document.getElementById('noRunningTasks').style.display = 
                         runningCount === 0 ? 'block' : 'none';
@@ -217,6 +222,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         queuedCount === 0 ? 'block' : 'none';
                     document.getElementById('noCompletedTasks').style.display = 
                         completedCount === 0 ? 'block' : 'none';
+                    
+                    // 自动切换到有任务的标签页（仅在没有单独选择过标签页时）
+                    const taskTabs = document.getElementById('taskTabs');
+                    if (!taskTabs.dataset.userSelected) {
+                        if (runningCount > 0) {
+                            document.getElementById('running-tab').click();
+                        } else if (queuedCount > 0) {
+                            document.getElementById('queued-tab').click();
+                        } else if (completedCount > 0) {
+                            document.getElementById('completed-tab').click();
+                        }
+                    }
                 }
             })
             .catch(error => console.error('刷新任务列表失败：', error));
@@ -228,10 +245,10 @@ document.addEventListener('DOMContentLoaded', function() {
         item.className = 'list-group-item';
         
         const statusClass = {
-            'queued': 'text-warning',
-            'processing': 'text-primary',
-            'completed': 'text-success',
-            'failed': 'text-danger'
+            'queued': 'bg-warning text-dark',
+            'processing': 'bg-primary',
+            'completed': 'bg-success',
+            'failed': 'bg-danger'
         }[task.status];
         
         const statusText = {
@@ -251,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const waitMs = startDate - createDate;
             const waitMinutes = Math.floor(waitMs / 60000);
             const waitSeconds = Math.floor((waitMs % 60000) / 1000);
-            waitTime = `等待时间: ${waitMinutes}分${waitSeconds}秒`;
+            waitTime = `${waitMinutes}分${waitSeconds}秒`;
         }
         
         if (task.completed_at && task.started_at) {
@@ -260,41 +277,66 @@ document.addEventListener('DOMContentLoaded', function() {
             const processMs = completeDate - startDate;
             const processMinutes = Math.floor(processMs / 60000);
             const processSeconds = Math.floor((processMs % 60000) / 1000);
-            processTime = `处理时间: ${processMinutes}分${processSeconds}秒`;
+            processTime = `${processMinutes}分${processSeconds}秒`;
         }
         
+        // 格式化时间为短格式 (只显示 时:分:秒)
+        const shortTime = (isoTime) => {
+            if (!isoTime) return '';
+            return new Date(isoTime).toLocaleTimeString('zh-CN');
+        };
+        
+        // 构建任务项HTML
         let html = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-1">${task.text.substring(0, 50)}${task.text.length > 50 ? '...' : ''}</h6>
-                    <small class="text-muted">
-                        创建时间：${formatTime(task.created_at)}<br>
-                        ${task.started_at ? `开始时间：${formatTime(task.started_at)}<br>` : ''}
-                        ${task.completed_at ? `完成时间：${formatTime(task.completed_at)}<br>` : ''}
-                        ${waitTime ? `${waitTime}<br>` : ''}
-                        ${processTime ? `${processTime}` : ''}
-                    </small>
+            <div class="d-flex justify-content-between align-items-start mb-1">
+                <div class="text-truncate" style="max-width: 70%;" title="${task.text}">
+                    ${task.text.substring(0, 30)}${task.text.length > 30 ? '...' : ''}
                 </div>
-                <span class="badge ${statusClass}">${statusText}</span>
+                <span class="badge ${statusClass}" style="font-size: 0.7rem;">${statusText}</span>
             </div>
         `;
         
+        // 显示简洁的时间信息
+        html += `<div class="d-flex flex-wrap gap-2 text-muted" style="font-size: 0.7rem;">`;
+        
+        if (task.created_at) {
+            html += `<div title="创建: ${formatTime(task.created_at)}"><i class="bi bi-calendar-plus"></i> ${shortTime(task.created_at)}</div>`;
+        }
+        
+        if (task.started_at) {
+            html += `<div title="开始: ${formatTime(task.started_at)}"><i class="bi bi-play-circle"></i> ${shortTime(task.started_at)}</div>`;
+        }
+        
+        if (task.completed_at) {
+            html += `<div title="完成: ${formatTime(task.completed_at)}"><i class="bi bi-check-circle"></i> ${shortTime(task.completed_at)}</div>`;
+        }
+        
+        if (waitTime) {
+            html += `<div title="等待时间"><i class="bi bi-hourglass-split"></i> ${waitTime}</div>`;
+        }
+        
+        if (processTime) {
+            html += `<div title="处理时间"><i class="bi bi-lightning-charge"></i> ${processTime}</div>`;
+        }
+        
+        html += `</div>`;
+        
+        // 添加进度条（仅处理中任务）
         if (task.status === 'processing') {
             html += `
-                <div class="progress mt-2" style="height: 8px;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                         role="progressbar" 
-                         style="width: ${task.progress || 0}%">
-                    </div>
+                <div class="progress mt-1" style="height: 4px;">
+                    <div class="progress-bar" role="progressbar" style="width: ${task.progress || 0}%"></div>
                 </div>
-                <small class="text-muted mt-1 d-block text-end">${task.progress || 0}%</small>
             `;
         }
         
+        // 添加下载按钮（仅已完成任务）
         if (task.status === 'completed' && task.file_id) {
             html += `
-                <div class="mt-2 text-end">
-                    <a href="/api/download/${task.file_id}" class="btn btn-sm btn-success">下载视频</a>
+                <div class="mt-1 text-end">
+                    <a href="/api/download/${task.file_id}" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 0.7rem;">
+                        <i class="bi bi-download"></i> 下载
+                    </a>
                 </div>
             `;
         }
@@ -498,8 +540,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     const task = data.task;
-                    progressBar.style.width = `${task.progress || 0}%`;
-                    progressBar.textContent = `${task.progress || 0}%`;
+                    const progress = task.progress || 0;
+                    
+                    // 更新进度条和进度文本
+                    progressBar.style.width = `${progress}%`;
+                    document.getElementById('taskProgress').textContent = `${progress}%`;
                     taskMessage.textContent = task.message || '处理中...';
                     
                     // 计算时间信息
@@ -643,6 +688,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化
     loadVoices();
     refreshTaskList();
+    
+    // 初始化标签页点击事件
+    document.querySelectorAll('#taskTabs .nav-link').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.getElementById('taskTabs').dataset.userSelected = 'true';
+        });
+    });
     
     // 定期刷新任务列表
     setInterval(refreshTaskList, 5000);
