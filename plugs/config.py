@@ -1,8 +1,14 @@
 from azure.cognitiveservices.speech import SpeechConfig
+import configparser
 
+
+config = configparser.ConfigParser()
+config.read('../config/config.ini')
+azure_key = config.get('DEFAULT', 'azure_key')
+azure_region = config.get('DEFAULT', 'azure_region')
 # 默认配置信息
-DEFAULT_SUBSCRIPTION_KEY = "2d8d0e6c7e634cd099d47386085ffc9d"
-DEFAULT_REGION = "eastus"
+DEFAULT_SUBSCRIPTION_KEY = azure_key
+DEFAULT_REGION = azure_region
 DEFAULT_LANGUAGE = "zh-CN"
 DEFAULT_VOICE_NAME = "zh-CN-XiaoxiaoNeural"
 
