@@ -25,14 +25,44 @@
                             <div class="mb-3">
                                 <label for="textInput" class="form-label">输入文本</label>
                                 <textarea class="form-control" id="textInput" rows="6" placeholder="请输入要转换为视频的文本..."></textarea>
+                                <div class="form-text">
+                                    <a href="#" id="toggleBatchMode" class="text-decoration-none">
+                                        <i class="bi bi-folder"></i> 批量文件夹模式
+                                    </a>
+                                </div>
                             </div>
-                            <div class="mb-3">
+                            
+                            <div class="mb-3" id="batchOptionsSection" style="display: none;">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="bi bi-folder"></i> 批量文件夹处理
+                                        </h6>
+                                        <div class="mb-3">
+                                            <label for="folderInput" class="form-label">选择文件夹</label>
+                                            <input type="file" class="form-control" id="folderInput" webkitdirectory directory multiple>
+                                            <div class="form-text">选择包含文本文件(.txt)和图片文件的文件夹</div>
+                                        </div>
+                                        <div class="form-text mb-2">
+                                            <ul class="small text-muted mb-0">
+                                                <li>支持的文本格式: .txt</li>
+                                                <li>支持的图片格式: .jpg, .jpeg, .png</li>
+                                                <li>文本文件名与图片文件名需要匹配 (例如: text1.txt 对应 text1.png)</li>
+                                            </ul>
+                                        </div>
+                                        <div id="fileList" class="mt-2 small" style="max-height: 150px; overflow-y: auto;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3" id="singleModeOptions">
                                 <label for="voiceSelect" class="form-label">选择语音</label>
                                 <select class="form-select" id="voiceSelect">
                                     <option value="" selected disabled>请选择语音...</option>
                                 </select>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-3" id="singleModeImageUpload">
                                 <label for="imageInput" class="form-label">上传背景图片（可选）</label>
                                 <input type="file" class="form-control" id="imageInput" accept="image/*">
                                 <div class="form-text">支持 jpg、png 格式的图片</div>
@@ -107,7 +137,7 @@
         </div>
 
         <footer class="text-center mt-5 text-muted">
-            <p>© 2023 文本转视频生成器 | 版权所有</p>
+            <p>© 2025 文本转视频生成器</p>
         </footer>
     </div>
 

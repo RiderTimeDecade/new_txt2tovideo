@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, request
 from models.task_manager import TaskManager
 from models.file_handler import FileHandler
 from models.video_processor import VideoProcessor
@@ -20,6 +20,9 @@ class TaskRoutes:
             if not text:
                 return jsonify({"error": "文本不能为空"})
             
+            if not voice_name:
+                return jsonify({"error": "请选择语音"})
+            
             # 生成唯一文件名
             file_id = str(uuid.uuid4())
             
@@ -28,7 +31,7 @@ class TaskRoutes:
             
             # 处理图片上传
             img_path = None
-            if 'image' in request.files:
+            if 'image' in request.files and request.files['image'].filename:
                 img_path = self.file_handler.save_image_file(request.files['image'], file_id)
             
             # 创建任务
