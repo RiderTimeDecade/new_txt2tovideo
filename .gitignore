@@ -1,7 +1,5 @@
-/output/temp
 /output
 /webui/output
 /webui/data
 /plugs/__pycache__
-/webui/routes/__pycache__
 /webui/routes/__pycache__
