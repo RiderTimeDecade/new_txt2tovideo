@@ -319,6 +319,15 @@ document.addEventListener('DOMContentLoaded', function() {
             html += `<div title="处理时间"><i class="bi bi-lightning-charge"></i> ${processTime}</div>`;
         }
         
+        // 添加下载按钮（仅已完成任务）
+        if (task.status === 'completed' && task.file_id) {
+            html += `<div class="ms-auto">
+                <a href="/api/download/${task.file_id}" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 0.7rem;">
+                    <i class="bi bi-download"></i> 下载
+                </a>
+            </div>`;
+        }
+        
         html += `</div>`;
         
         // 添加进度条（仅处理中任务）
@@ -326,17 +335,6 @@ document.addEventListener('DOMContentLoaded', function() {
             html += `
                 <div class="progress mt-1" style="height: 4px;">
                     <div class="progress-bar" role="progressbar" style="width: ${task.progress || 0}%"></div>
-                </div>
-            `;
-        }
-        
-        // 添加下载按钮（仅已完成任务）
-        if (task.status === 'completed' && task.file_id) {
-            html += `
-                <div class="mt-1 text-end">
-                    <a href="/api/download/${task.file_id}" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 0.7rem;">
-                        <i class="bi bi-download"></i> 下载
-                    </a>
                 </div>
             `;
         }

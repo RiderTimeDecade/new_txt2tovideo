@@ -70,75 +70,77 @@
 
             <!-- 右侧：任务状态和列表 -->
             <div class="col-md-7">
-                <!-- 当前任务状态 -->
-                <div class="card mb-2" id="taskCard" style="display: none;">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="card-title mb-0"><i class="bi bi-clock-history"></i> 当前任务状态</h6>
-                            <span class="badge bg-primary" id="taskProgress">0%</span>
-                        </div>
-                        <div class="progress mb-2" style="height: 6px;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" role="progressbar" style="width: 0%"></div>
-                        </div>
-                        <p id="taskMessage" class="mb-1 small">准备中...</p>
-                        <p id="taskTimeInfo" class="text-muted small mb-2">创建时间: -</p>
-                        <div id="downloadSection" style="display: none;">
-                            <a href="#" class="btn btn-success btn-sm w-100" id="downloadBtn">
-                                <i class="bi bi-download"></i> 下载视频
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <div class="d-flex flex-column" style="height: calc(100vh - 200px);">
+                    <!-- 任务列表 -->
+                    <div class="card flex-grow-1 position-relative">
+                        <div class="card-body p-3 d-flex flex-column h-100">
+                            <!-- 当前任务状态 -->
+                            <div class="card mb-2 position-absolute w-100" id="taskCard" style="display: none; z-index: 1; top: 0; transform: translateY(-100%);">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="card-title mb-0"><i class="bi bi-clock-history"></i> 当前任务状态</h6>
+                                        <span class="badge bg-primary" id="taskProgress">0%</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 6px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <p id="taskMessage" class="mb-1 small">准备中...</p>
+                                    <p id="taskTimeInfo" class="text-muted small mb-1">创建时间: -</p>
+                                    <div id="downloadSection" style="display: none; margin-top: -0.5rem;">
+                                        <a href="#" class="btn btn-success btn-sm w-100" id="downloadBtn">
+                                            <i class="bi bi-download"></i> 下载视频
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
 
-                <!-- 任务列表 -->
-                <div class="card h-100">
-                    <div class="card-body p-3">
-                        <ul class="nav nav-tabs nav-fill mb-2 small" id="taskTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="running-tab" data-bs-toggle="tab" data-bs-target="#running-tab-pane" type="button" role="tab">
-                                    <i class="bi bi-play-circle"></i> 运行中 <span id="runningCount" class="badge bg-primary">0</span>
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="queued-tab" data-bs-toggle="tab" data-bs-target="#queued-tab-pane" type="button" role="tab">
-                                    <i class="bi bi-hourglass-split"></i> 等待中 <span id="queuedCount" class="badge bg-warning text-dark">0</span>
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-tab-pane" type="button" role="tab">
-                                    <i class="bi bi-check-circle"></i> 已完成 <span id="completedCount" class="badge bg-success">0</span>
-                                </button>
-                            </li>
-                        </ul>
-                        
-                        <div class="tab-content" id="taskTabContent">
-                            <!-- 运行中的任务 -->
-                            <div class="tab-pane fade show active" id="running-tab-pane" role="tabpanel" tabindex="0">
-                                <div class="list-group list-group-flush small" id="runningTasks">
-                                    <!-- 运行中的任务将在这里动态添加 -->
-                                </div>
-                                <div class="text-center text-muted small py-2" id="noRunningTasks">
-                                    <i class="bi bi-info-circle"></i> 没有运行中的任务
-                                </div>
-                            </div>
+                            <ul class="nav nav-tabs nav-fill mb-2 small" id="taskTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="running-tab" data-bs-toggle="tab" data-bs-target="#running-tab-pane" type="button" role="tab">
+                                        <i class="bi bi-play-circle"></i> 运行中 <span id="runningCount" class="badge bg-primary">0</span>
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="queued-tab" data-bs-toggle="tab" data-bs-target="#queued-tab-pane" type="button" role="tab">
+                                        <i class="bi bi-hourglass-split"></i> 等待中 <span id="queuedCount" class="badge bg-warning text-dark">0</span>
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-tab-pane" type="button" role="tab">
+                                        <i class="bi bi-check-circle"></i> 已完成 <span id="completedCount" class="badge bg-success">0</span>
+                                    </button>
+                                </li>
+                            </ul>
                             
-                            <!-- 等待中的任务 -->
-                            <div class="tab-pane fade" id="queued-tab-pane" role="tabpanel" tabindex="0">
-                                <div class="list-group list-group-flush small" id="queuedTasks">
-                                    <!-- 等待中的任务将在这里动态添加 -->
+                            <div class="tab-content flex-grow-1 overflow-auto" id="taskTabContent">
+                                <!-- 运行中的任务 -->
+                                <div class="tab-pane fade show active" id="running-tab-pane" role="tabpanel" tabindex="0">
+                                    <div class="list-group list-group-flush small" id="runningTasks">
+                                        <!-- 运行中的任务将在这里动态添加 -->
+                                    </div>
+                                    <div class="text-center text-muted small py-2" id="noRunningTasks">
+                                        <i class="bi bi-info-circle"></i> 没有运行中的任务
+                                    </div>
                                 </div>
-                                <div class="text-center text-muted small py-2" id="noQueuedTasks">
-                                    <i class="bi bi-info-circle"></i> 没有等待中的任务
+                                
+                                <!-- 等待中的任务 -->
+                                <div class="tab-pane fade" id="queued-tab-pane" role="tabpanel" tabindex="0">
+                                    <div class="list-group list-group-flush small" id="queuedTasks">
+                                        <!-- 等待中的任务将在这里动态添加 -->
+                                    </div>
+                                    <div class="text-center text-muted small py-2" id="noQueuedTasks">
+                                        <i class="bi bi-info-circle"></i> 没有等待中的任务
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <!-- 已完成的任务 -->
-                            <div class="tab-pane fade" id="completed-tab-pane" role="tabpanel" tabindex="0">
-                                <div class="list-group list-group-flush small" id="completedTasks">
-                                    <!-- 已完成的任务将在这里动态添加 -->
-                                </div>
-                                <div class="text-center text-muted small py-2" id="noCompletedTasks">
-                                    <i class="bi bi-info-circle"></i> 没有已完成的任务
+                                
+                                <!-- 已完成的任务 -->
+                                <div class="tab-pane fade" id="completed-tab-pane" role="tabpanel" tabindex="0">
+                                    <div class="list-group list-group-flush small" id="completedTasks">
+                                        <!-- 已完成的任务将在这里动态添加 -->
+                                    </div>
+                                    <div class="text-center text-muted small py-2" id="noCompletedTasks">
+                                        <i class="bi bi-info-circle"></i> 没有已完成的任务
+                                    </div>
                                 </div>
                             </div>
                         </div>
