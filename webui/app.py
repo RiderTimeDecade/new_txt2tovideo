@@ -16,12 +16,18 @@ from routes.download_routes import DownloadRoutes
 from routes.voice_routes import VoiceRoutes
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'data'
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 限制上传文件大小为16MB
 
 # 初始化管理器
 task_manager = TaskManager()
-file_handler = FileHandler(app.config['UPLOAD_FOLDER'], 'output/temp')
+file_handler = FileHandler(
+    app.config['UPLOAD_FOLDER'], 
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'webui/output/temp')
+)
+file_handler.clear_temp_directory()
+print(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'webui/output/temp'))
+
 video_processor = VideoProcessor(task_manager)
 
 # 初始化路由处理器
@@ -52,6 +58,7 @@ def worker():
             # 处理任务
             video_processor.process_video(task_id, text_file, voice_name, img_path)
             
+            file_handler.clear_temp_directory()
             # 标记任务完成
             task_manager.task_done()
             
