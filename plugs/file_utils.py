@@ -10,7 +10,9 @@ def read_text_file(file_path, default_text="这是一个示例文本，用于测
     """
     try:
         with open(file_path, "r", encoding="utf-8") as f:
-            return f.read()
+            text = f.read()
+            text = text.replace("&", "")
+            return text
     except FileNotFoundError:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(default_text)
