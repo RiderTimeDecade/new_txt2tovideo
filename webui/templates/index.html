@@ -13,6 +13,14 @@
         <header class="text-center py-3">
             <h3 class="mb-0">文本转视频生成器</h3>
             <p class="small text-muted mb-0">输入文本，选择语音，生成带有字幕的视频</p>
+            <div class="d-flex justify-content-center mt-2">
+                <div class="badge bg-success me-2 p-2" style="font-size: 1.1rem;">
+                    <i class="bi bi-film"></i> 已成功生成 <span id="successCount" class="fw-bold" style="font-size: 1.3rem;">0</span> 个视频
+                </div>
+                <a href="/history" class="badge bg-info text-white text-decoration-none p-2" style="font-size: 1.1rem;">
+                    <i class="bi bi-clock-history"></i> 查看历史记录
+                </a>
+            </div>
         </header>
 
         <div class="row g-2">
@@ -110,6 +118,11 @@
                                         <i class="bi bi-check-circle"></i> 已完成 <span id="completedCount" class="badge bg-success">0</span>
                                     </button>
                                 </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="failed-tab" data-bs-toggle="tab" data-bs-target="#failed-tab-pane" type="button" role="tab">
+                                        <i class="bi bi-x-circle"></i> 失败 <span id="failedCount" class="badge bg-danger">0</span>
+                                    </button>
+                                </li>
                             </ul>
                             
                             <div class="tab-content flex-grow-1 overflow-auto" id="taskTabContent">
@@ -142,6 +155,15 @@
                                         <i class="bi bi-info-circle"></i> 没有已完成的任务
                                     </div>
                                 </div>
+                                <!-- 失败的任务 -->
+                                <div class="tab-pane fade" id="failed-tab-pane" role="tabpanel" tabindex="0">
+                                    <div class="list-group list-group-flush small" id="failedTasks">
+                                        <!-- 失败的任务将在这里动态添加 -->
+                                    </div>
+                                    <div class="text-center text-muted small py-2" id="noFailedTasks">
+                                        <i class="bi bi-info-circle"></i> 没有失败的任务
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -167,5 +189,21 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // 获取成功生成的视频数量
+        function getSuccessCount() {
+            fetch('/api/history')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('successCount').textContent = data.length;
+                })
+                .catch(error => console.error('获取历史记录数量失败:', error));
+        }
+        
+        // 页面加载时获取成功数量
+        document.addEventListener('DOMContentLoaded', function() {
+            getSuccessCount();
+        });
+    </script>
 </body>
 </html> 

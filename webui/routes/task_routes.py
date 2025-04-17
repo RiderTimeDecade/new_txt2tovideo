@@ -5,10 +5,11 @@ from models.video_processor import VideoProcessor
 import uuid
 
 class TaskRoutes:
-    def __init__(self, task_manager, file_handler, video_processor):
+    def __init__(self, task_manager, file_handler, video_processor, history_manager):
         self.task_manager = task_manager
         self.file_handler = file_handler
         self.video_processor = video_processor
+        self.history_manager = history_manager
 
     def generate_video(self, request):
         """生成视频的API端点"""

@@ -8,10 +8,12 @@ def read_text_file(file_path, default_text="这是一个示例文本，用于测
     Returns:
         str: 文件内容
     """
+    filter_list = ["&",">","<"]
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             text = f.read()
-            text = text.replace("&", "")
+            for filter_item in filter_list:
+                text = text.replace(filter_item, "")
             return text
     except FileNotFoundError:
         with open(file_path, "w", encoding="utf-8") as f:

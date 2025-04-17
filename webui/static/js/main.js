@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const runningTasks = document.getElementById('runningTasks');
     const queuedTasks = document.getElementById('queuedTasks');
     const completedTasks = document.getElementById('completedTasks');
+    const failedTasks = document.getElementById('failedTasks');
     
     // 初始化变量
     let currentTaskId = null;
@@ -189,11 +190,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     runningTasks.innerHTML = '';
                     queuedTasks.innerHTML = '';
                     completedTasks.innerHTML = '';
+                    failedTasks.innerHTML = '';
                     
                     // 跟踪任务计数
                     let runningCount = 0;
                     let queuedCount = 0;
                     let completedCount = 0;
+                    let failedCount = 0;
                     
                     // 处理每个任务
                     data.tasks.forEach(task => {
@@ -207,6 +210,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         } else if (task.status === 'completed') {
                             completedTasks.appendChild(taskElement);
                             completedCount++;
+                        } else if (task.status === 'failed') {
+                            failedTasks.appendChild(taskElement);
+                            failedCount++;
                         }
                     });
                     
@@ -214,6 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('runningCount').textContent = runningCount;
                     document.getElementById('queuedCount').textContent = queuedCount;
                     document.getElementById('completedCount').textContent = completedCount;
+                    document.getElementById('failedCount').textContent = failedCount;
                     
                     // 显示或隐藏空状态提示
                     document.getElementById('noRunningTasks').style.display = 
@@ -222,6 +229,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         queuedCount === 0 ? 'block' : 'none';
                     document.getElementById('noCompletedTasks').style.display = 
                         completedCount === 0 ? 'block' : 'none';
+                    document.getElementById('noFailedTasks').style.display = 
+                        failedCount === 0 ? 'block' : 'none';
                     
                     // 自动切换到有任务的标签页（仅在没有单独选择过标签页时）
                     const taskTabs = document.getElementById('taskTabs');
@@ -232,6 +241,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             document.getElementById('queued-tab').click();
                         } else if (completedCount > 0) {
                             document.getElementById('completed-tab').click();
+                        } else if (failedCount > 0) {
+                            document.getElementById('failed-tab').click();
                         }
                     }
                 }
@@ -696,4 +707,54 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 定期刷新任务列表
     setInterval(refreshTaskList, 5000);
+
+    // 更新任务状态
+    function updateTaskStatus(task) {
+        const taskElement = document.querySelector(`[data-task-id="${task.id}"]`);
+        if (!taskElement) return;
+        
+        // 更新进度条和消息
+        const progressBar = taskElement.querySelector('.progress-bar');
+        const taskMessage = taskElement.querySelector('.task-message');
+        const statusBadge = taskElement.querySelector('.status-badge');
+        
+        progressBar.style.width = `${task.progress}%`;
+        progressBar.textContent = `${task.progress}%`;
+        taskMessage.textContent = task.message;
+        
+        // 更新状态标签
+        if (task.status === 'completed') {
+            statusBadge.className = 'badge bg-success status-badge';
+            statusBadge.textContent = '已完成';
+            // 更新成功数量
+            getSuccessCount();
+        } else if (task.status === 'failed') {
+            statusBadge.className = 'badge bg-danger status-badge';
+            statusBadge.textContent = '失败';
+            // 任务失败时也更新历史记录
+            getSuccessCount();
+        } else {
+            statusBadge.className = 'badge bg-primary status-badge';
+            statusBadge.textContent = '处理中';
+        }
+        
+        // 如果任务完成或失败，显示下载按钮（如果有输出文件）
+        if ((task.status === 'completed' || task.status === 'failed') && task.output_path) {
+            const downloadBtn = taskElement.querySelector('.download-btn');
+            if (downloadBtn) {
+                downloadBtn.style.display = 'block';
+                downloadBtn.href = task.output_path;
+            }
+        }
+    }
+
+    // 获取成功生成的视频数量
+    function getSuccessCount() {
+        fetch('/api/history')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('successCount').textContent = data.length;
+            })
+            .catch(error => console.error('获取历史记录数量失败:', error));
+    }
 }); 

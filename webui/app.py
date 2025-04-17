@@ -3,6 +3,7 @@ import os
 import sys
 import uuid
 import json
+from datetime import datetime
 
 # 添加项目根目录到系统路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -11,6 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.task_manager import TaskManager
 from models.file_handler import FileHandler
 from models.video_processor import VideoProcessor
+from models.history_manager import HistoryManager
 from routes.task_routes import TaskRoutes
 from routes.download_routes import DownloadRoutes
 from routes.voice_routes import VoiceRoutes
@@ -18,6 +20,7 @@ from routes.voice_routes import VoiceRoutes
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'webui/data')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 限制上传文件大小为16MB
+app.config['HISTORY_FILE'] = os.path.join(app.config['UPLOAD_FOLDER'], 'history.json')
 
 # 初始化管理器
 task_manager = TaskManager()
@@ -30,8 +33,11 @@ print(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
 
 video_processor = VideoProcessor(task_manager)
 
+# 初始化历史记录管理器
+history_manager = HistoryManager(app.config['HISTORY_FILE'])
+
 # 初始化路由处理器
-task_routes = TaskRoutes(task_manager, file_handler, video_processor)
+task_routes = TaskRoutes(task_manager, file_handler, video_processor, history_manager)
 download_routes = DownloadRoutes(file_handler)
 voice_routes = VoiceRoutes()
 
@@ -55,15 +61,53 @@ def worker():
                 message="任务开始处理..."
             )
             
-            # 处理任务
-            video_processor.process_video(task_id, text_file, voice_name, img_path)
-            
-            file_handler.clear_temp_directory()
-            # 标记任务完成
-            task_manager.task_done()
-            
+            try:
+                # 处理任务
+                output_path = video_processor.process_video(task_id, text_file, voice_name, img_path)
+                print(f"视频处理完成，输出路径: {output_path}")
+                
+                # 获取实际的输出路径 - 确保使用正确的路径格式
+                if output_path.startswith("output/"):
+                    final_output_path = output_path
+                else:
+                    final_output_path = f"output/{os.path.basename(output_path)}"
+                print(f"最终输出路径: {final_output_path}")
+                
+                # 读取原始文本内容
+                with open(text_file, 'r', encoding='utf-8') as f:
+                    text_content = f.read()
+                print(f"读取文本内容长度: {len(text_content)}")
+                
+                # 任务完成时添加到历史记录
+                history_result = history_manager.add_record(
+                    task_id,
+                    text_content,
+                    voice_name,
+                    img_path,
+                    final_output_path
+                )
+                print(f"添加历史记录结果: {'成功' if history_result else '失败'}")
+                
+                # 更新任务状态为完成
+                task_manager.update_task_status(
+                    task_id,
+                    "completed",
+                    progress=100,
+                    message="任务完成"
+                )
+            except Exception as e:
+                print(f"生成视频时出错: {str(e)}")
+                # 更新任务状态为失败
+                task_manager.update_task_status(
+                    task_id,
+                    "failed",
+                    progress=0,
+                    message=f"任务失败: {str(e)}"
+                )
+                
         except Exception as e:
             print(f"工作线程处理任务时出错: {str(e)}")
+            continue
 
 # 启动工作线程
 task_manager.start_worker(worker)
@@ -97,6 +141,18 @@ def download_video(file_id):
 def get_voices():
     """获取可用的语音列表"""
     return voice_routes.get_voices()
+
+@app.route('/api/history', methods=['GET'])
+def get_history():
+    """获取历史记录"""
+    limit = request.args.get('limit', default=50, type=int)
+    history = history_manager.get_history(limit)
+    return jsonify(history)
+
+@app.route('/history')
+def history_page():
+    """渲染历史记录页面"""
+    return render_template('history.html')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000) 
