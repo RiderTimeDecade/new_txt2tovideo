@@ -56,7 +56,7 @@ class HistoryManager:
             print(f"添加历史记录失败: {str(e)}")
             return False
     
-    def get_history(self, limit=50):
+    def get_history(self, limit=100):
         """获取历史记录"""
         try:
             print(f"获取历史记录，限制: {limit}")

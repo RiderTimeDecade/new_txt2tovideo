@@ -6,6 +6,7 @@ class FileHandler:
     def __init__(self, upload_folder, temp_folder):
         self.upload_folder = upload_folder
         self.temp_folder = temp_folder
+        self.output_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'output')
         self._ensure_directories()
 
     def _ensure_directories(self):
