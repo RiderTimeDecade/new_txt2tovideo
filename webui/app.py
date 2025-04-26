@@ -62,7 +62,10 @@ def worker():
             )
             
             try:
+                print("初始化 temp文件夹")
+                file_handler.clear_temp_directory()
                 # 处理任务
+                
                 output_path = video_processor.process_video(task_id, text_file, voice_name, img_path)
                 print(f"视频处理完成，输出路径: {output_path}")
                 

@@ -118,7 +118,7 @@ def generate_srt_entries(text, timestamps, voice_name):
     
     # 定义分行标点符号
     zh_split_punctuation = ['，', '。']
-    en_split_punctuation = [',', '.']
+    en_split_punctuation = [',', '.',"?","!"]
     
     # 其他标点符号（不需要加空格）
     other_punctuation = ['!', '?', '/', '-', '—', '"', "'", '！', '？']

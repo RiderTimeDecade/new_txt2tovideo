@@ -15,7 +15,7 @@ def text_to_ssml(text,speech_config):
                 <voice name="{speech_config.speech_synthesis_voice_name}">
                     
                     <mstts:silence type="Sentenceboundary-exact" value="300ms"/>
-                    <prosody rate="0.9">
+                    <prosody rate="1.0">
                         {text}
                     </prosody>
                 </voice>

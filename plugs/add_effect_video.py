@@ -141,6 +141,8 @@ def merge_videos_with_blend_lighten(input_files, output_file, watermark_text=Non
         print("视频合并过程中出错:", str(e))
         raise
 
+def add_bgm():
+    pass
 def get_video_duration(video_file):
     """
     获取视频时长（秒）
