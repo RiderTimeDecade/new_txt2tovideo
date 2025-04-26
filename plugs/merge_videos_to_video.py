@@ -79,7 +79,7 @@ def mult_to_one(input_dir: str = "output",
         
         print(f"视频合并成功: {output_file}")
         
-        merge_videos_with_blend_lighten([output_file,"../config/effect/effect.mp4"],f"output/{timestamp}.mp4")
+        merge_videos_with_blend_lighten([output_file,"../config/effect/effect.mp4"],f"output/{timestamp}.mp4",watermark_text="text")
         #print(f"合并了 {len(video_files)} 个视频文件")
         output_file = f"output/{timestamp}.mp4"
         return output_file

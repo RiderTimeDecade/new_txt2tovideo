@@ -20,7 +20,7 @@ def get_standard_resolution(width, height):
     
     return closest
 
-def merge_videos_with_blend_lighten(input_files, output_file):
+def merge_videos_with_blend_lighten(input_files, output_file, watermark_text=None, watermark_position="right_top"):
     """
     使用 blend=lighten 滤镜合并视频，支持特效视频循环播放。
     第一个视频作为基础视频，第二个视频作为特效视频（将循环播放）。
@@ -28,6 +28,8 @@ def merge_videos_with_blend_lighten(input_files, output_file):
 
     :param input_files: 输入视频文件路径列表 [基础视频, 特效视频]
     :param output_file: 输出视频文件路径
+    :param watermark_text: 水印文字，不为None时添加文字水印
+    :param watermark_position: 水印位置，可选：right_top, left_top, right_bottom, left_bottom, center
     """
     if len(input_files) < 2:
         raise ValueError("至少需要两个输入视频文件来应用 blend 滤镜。")
@@ -70,13 +72,44 @@ def merge_videos_with_blend_lighten(input_files, output_file):
         width, height = get_standard_resolution(orig_width, orig_height)
         print(f"调整后的标准分辨率: {width}x{height}")
 
-        # 构建 filter_complex
+        # 水印位置参数
+        positions = {
+            "right_top": f"w-tw-50:50",
+            "left_top": "10:10",
+            "right_bottom": "w-tw-10:h-th-10",
+            "left_bottom": "10:h-th-10",
+            "center": "(w-tw)/2:(h-th)/2"
+        }
+        
+        watermark_pos = positions.get(watermark_position, positions["right_top"])
+        print("watermark_pos: ",watermark_pos)
+        x, y = watermark_pos.split(":")
+
+        # 构建基本 filter_complex
         filter_complex = (
             f'[0:v]scale={width}:{height},setsar=1[base];'
             f'[1:v]scale={width}:{height},format=yuva420p[scaled];'
             f'[scaled]loop=loop=-1:size=500,setpts=PTS-STARTPTS[loopv];'
-            f'[base][loopv]blend=lighten[outv]'
+            f'[base][loopv]blend=lighten'
         )
+        
+        # 如果需要添加水印，在blend后添加水印
+        if watermark_text:
+            # 美化的水印样式 - 橙色描边效果，匹配图片中的效果
+            watermark_style = (
+                f":fontsize=30"  # 字体尺寸
+                f":fontcolor=white"  # 白色字体
+                f":fontfile=Arial.ttf"  # 使用简单字体名，不指定完整路径
+                f":borderw=2"  # 更宽的边框，增强轮廓效果
+                f":bordercolor=0xFFA500"  # 橙色边框
+                f":box=0"  # 关闭背景框
+                f":shadowcolor=0xE67E22@0.5"  # 添加淡橙色阴影增强立体感
+                f":shadowx=2:shadowy=2"  # 阴影偏移
+            )
+            filter_complex += f",drawtext=text='{watermark_text}':x={x}:y={y}{watermark_style}"
+        
+        # 添加最终输出标签
+        filter_complex += "[outv]"
 
         # 构建 FFmpeg 命令数组
         command = [
@@ -188,7 +221,7 @@ if __name__ == "__main__":
         print("基础视频信息:", get_video_info(base_video))
         print("特效视频信息:", get_video_info(effect_video))
         
-        # 合并视频
-        merge_videos_with_blend_lighten([base_video, effect_video], output_file)
+        # 合并视频并添加水印
+        merge_videos_with_blend_lighten([base_video, effect_video], output_file, watermark_text="test")
     except Exception as e:
         print("处理失败:", str(e))
