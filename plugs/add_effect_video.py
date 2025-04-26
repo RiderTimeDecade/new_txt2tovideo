@@ -74,7 +74,7 @@ def merge_videos_with_blend_lighten(input_files, output_file, watermark_text=Non
 
         # 水印位置参数
         positions = {
-            "right_top": f"w-tw-50:50",
+            "right_top": f"w-tw-70:50",
             "left_top": "10:10",
             "right_bottom": "w-tw-10:h-th-10",
             "left_bottom": "10:h-th-10",
@@ -97,10 +97,10 @@ def merge_videos_with_blend_lighten(input_files, output_file, watermark_text=Non
         if watermark_text:
             # 美化的水印样式 - 橙色描边效果，匹配图片中的效果
             watermark_style = (
-                f":fontsize=30"  # 字体尺寸
+                f":fontsize=50"  # 字体尺寸
                 f":fontcolor=white"  # 白色字体
-                f":fontfile=Arial.ttf"  # 使用简单字体名，不指定完整路径
-                f":borderw=2"  # 更宽的边框，增强轮廓效果
+                f":fontfile=../config/font/UNSII-2.ttf"  # 使用config/font目录下的字体
+                f":borderw=2"  # 边框宽度
                 f":bordercolor=0xFFA500"  # 橙色边框
                 f":box=0"  # 关闭背景框
                 f":shadowcolor=0xE67E22@0.5"  # 添加淡橙色阴影增强立体感

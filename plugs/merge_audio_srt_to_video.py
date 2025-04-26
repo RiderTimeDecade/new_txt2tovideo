@@ -74,7 +74,12 @@ def merge_to_video(audio_path: str,
         if srt_path:
             srt_path = srt_path.replace('\\', '/').replace(':', '\\:')
             filter_complex[-1] = filter_complex[-1].replace('[video]', '[videotmp]')
-            filter_complex.append(f'[videotmp]subtitles={srt_path}:force_style=\'FontName=Arial Black,FontSize=30,Bold=1,PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2,MarginV=20\'[video]')
+            
+            # 方法1：使用系统字体名称
+            filter_complex.append(f'[videotmp]subtitles={srt_path}:force_style=\'FontName=frick0.3,FontSize=30,Bold=1,PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2,MarginV=20\'[video]')
+            
+            # 方法2（如果方法1失败可尝试）：使用drawtext直接渲染字幕
+            # 注意：这需要更复杂的实现，读取SRT文件并转换为drawtext命令
         
         # 添加滤镜链
         cmd.extend(['-filter_complex', ';'.join(filter_complex)])
