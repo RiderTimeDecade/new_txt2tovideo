@@ -58,16 +58,7 @@ def merge_to_video(audio_path: str,
         
         # 如果有特效，添加特效
         filter_complex = []
-        # 暂时关闭特效合成功能
-        # if effect_path:
-        #     cmd.extend(['-stream_loop', '-1', '-i', effect_path])  # 特效
-        #     # 确保背景图片转为视频格式
-        #     filter_complex.append('[0:v]format=yuv420p[bg]')
-        #     # 处理MOV格式特效，保留alpha通道
-        #     filter_complex.append('[2:v]scale=1280:720,format=yuva420p[fx]')
-        #     # 使用overlay直接叠加特效，自动利用alpha通道
-        #     filter_complex.append('[bg][fx]overlay=0:0:format=auto[video]')
-        # else:
+        
         filter_complex.append('[0:v]format=yuv420p[video]')
         
         # 如果有字幕，添加字幕
@@ -78,8 +69,7 @@ def merge_to_video(audio_path: str,
             # 方法1：使用系统字体名称
             filter_complex.append(f'[videotmp]subtitles={srt_path}:force_style=\'FontName=frick0.3,FontSize=30,Bold=1,PrimaryColour=&H00FFFF,OutlineColour=&H000000,BorderStyle=1,Outline=2,MarginV=20\'[video]')
             
-            # 方法2（如果方法1失败可尝试）：使用drawtext直接渲染字幕
-            # 注意：这需要更复杂的实现，读取SRT文件并转换为drawtext命令
+           
         
         # 添加滤镜链
         cmd.extend(['-filter_complex', ';'.join(filter_complex)])
